@@ -11,6 +11,11 @@ namespace BOM.Editor
     public static class FixtureBuilder
     {
         public const string Folder="Assets/BOM/Fixtures";
+        public const string MaterialsFolder=Folder+"/Materials";
+        public const string ResponsesFolder=Folder+"/DestructionResponses";
+        public const string PresetsFolder=Folder+"/ExplosionPresets";
+        public const string PiecesFolder=Folder+"/Pieces";
+        public const string TexturesFolder=Folder+"/Textures";
         public const string ScenePath=Folder+"/ReferenceLevel.unity";
         public const string AssemblyPath=Folder+"/ReferenceAssembly.prefab";
         public const string WorldPath=Folder+"/ReferenceWorld.json";
@@ -21,7 +26,9 @@ namespace BOM.Editor
         }
         private static T Asset<T>(string name,Action<T> configure) where T:ScriptableObject
         {
-            string path=Folder+"/"+name+".asset";var existing=AssetDatabase.LoadAssetAtPath<T>(path);if(existing!=null) return existing;
+            string folder=typeof(T)==typeof(MaterialDefinition)?MaterialsFolder:typeof(T)==typeof(DestructionResponse)?ResponsesFolder:
+                typeof(T)==typeof(ExplosionPreset)?PresetsFolder:PiecesFolder;
+            Ensure(folder);string path=folder+"/"+name+".asset";var existing=AssetDatabase.LoadAssetAtPath<T>(path);if(existing!=null) return existing;
             var asset=ScriptableObject.CreateInstance<T>();asset.name=name;configure(asset);AssetDatabase.CreateAsset(asset,path);return asset;
         }
         public static Region Frame()
@@ -44,7 +51,7 @@ namespace BOM.Editor
             var bite=Asset<ExplosionPreset>("Test_SmallBite",p=>{p.radius=.8f;p.reachBudget=2;p.impulseSpeed=.3f;});
             var split=Asset<ExplosionPreset>("Test_Split",p=>{p.radius=1.2f;p.reachBudget=5;p.impulseSpeed=1;});
             var removal=Asset<ExplosionPreset>("Test_Removal",p=>{p.radius=5;p.reachBudget=20;p.impulseSpeed=0;});
-            string texturePath=Folder+"/FaceChecker.asset";var image=AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+            Ensure(TexturesFolder);string texturePath=TexturesFolder+"/FaceChecker.asset";var image=AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
             if(image==null)
             {
                 image=new Texture2D(16,16,TextureFormat.RGBA32,false) {name="FaceChecker",wrapMode=TextureWrapMode.Repeat,filterMode=FilterMode.Point};

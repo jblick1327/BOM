@@ -27,11 +27,11 @@ namespace BOM.Tests
         }
         [UnityTest] public IEnumerator AC01_ApprovedMultiMeshAssetCreatesExactlyOneInitialPhysicsBody()
         {
-            var piece=AssetDatabase.LoadAssetAtPath<PieceDefinition>(FixtureBuilder.Folder+"/ImportedMultiMeshFrame.asset");
+            var piece=AssetDatabase.LoadAssetAtPath<PieceDefinition>(FixtureBuilder.PiecesFolder+"/ImportedMultiMeshFrame.asset");
             Assert.That(piece,Is.Not.Null);Assert.That(piece.IsApproved,Is.True);Assert.That(piece.Draft().import.manuallyCorrected,Is.True);
             Assert.That(AssetDatabase.GUIDToAssetPath(piece.Draft().import.sourceGuid),Is.EqualTo(FixtureBuilder.SourcePath));
             var root=new GameObject("Imported acceptance level");objects.Add(root);var level=root.AddComponent<LevelAuthoring>();level.startOnPlay=false;level.enabled=false;
-            level.testPresets.Add(AssetDatabase.LoadAssetAtPath<ExplosionPreset>(FixtureBuilder.Folder+"/Test_SmallBite.asset"));
+            level.testPresets.Add(AssetDatabase.LoadAssetAtPath<ExplosionPreset>(FixtureBuilder.PresetsFolder+"/Test_SmallBite.asset"));
             var placed=new GameObject("One imported piece");placed.transform.SetParent(root.transform,false);placed.AddComponent<PiecePlacement>().piece=piece;
             Assert.That(LevelCompiler.TryCompile(level,out var resolved,out var report),Is.True,report.ToString());var session=new PlaytestSession();sessions.Add(session);
             Assert.That(session.TryStart(resolved,out var error),Is.True,error);Assert.That(session.BodyCount,Is.EqualTo(1));
@@ -93,7 +93,7 @@ namespace BOM.Tests
         [UnityTest] public IEnumerator AC11_FreshPostSplitReconstructionUsesOnlyCurrentStateDefinitionsAndImageBytes()
         {
             var world=AcceptanceFixtures.Single(Geometry.Rectangle(-2,-.25f,2,.25f),1,2);var appearance=world.definitions.appearances[0];
-            var texture=AssetDatabase.LoadAssetAtPath<Texture2D>(FixtureBuilder.Folder+"/FaceChecker.asset");appearance.imagePng=ImportService.ImagePng(texture);appearance.id=Fingerprints.Definition(appearance);world.bodies[0].appearance=appearance.id;
+            var texture=AssetDatabase.LoadAssetAtPath<Texture2D>(FixtureBuilder.TexturesFolder+"/FaceChecker.asset");appearance.imagePng=ImportService.ImagePng(texture);appearance.id=Fingerprints.Definition(appearance);world.bodies[0].appearance=appearance.id;
             var session=Session(world);string parent=world.bodies[0].id;Assert.That(session.TryExplode(new Vector2(0,.6f),0,out var error),Is.True,error);
             var captureClock=System.Diagnostics.Stopwatch.StartNew();string capture=session.Capture(true);captureClock.Stop();
             var current=session.ReadCommitted();Assert.That(current.bodies,Has.Count.EqualTo(2));Assert.That(current.bodies.All(b=>b.id!=parent),Is.True);
