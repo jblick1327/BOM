@@ -1,55 +1,47 @@
 # BOM
 
-Build destructible structures in Unity: import a model, edit its outline, place and connect pieces, then try explosions.
+Import FBX models as destructible XY pieces with 3D visuals, connect them in Unity, and test explosions.
 
 ## Open the project
 
 1. Install **Unity 6000.6.5f1** through Unity Hub.
-2. Clone this repository with GitHub Desktop, or download and unzip it.
-3. In Unity Hub, choose **Add project from disk** and select the folder containing `Assets`, `Packages` and `ProjectSettings`. Open it and wait for importing to finish.
+2. Clone or download this repository.
+3. In Unity Hub, choose **Add project from disk** and select the folder containing `Assets`, `Packages` and `ProjectSettings`. Open it and wait for imports to finish.
 4. Open `Assets/Scenes/StarterLevel.unity`. Select **BOM Level** in the Hierarchy, then choose **BOM > Authoring workspace**.
 
-The starter has an empty level group and a subtly angled camera. Nothing is placed yet. No command-line tools are needed.
+StarterLevel is empty. See the [authoring guide](Docs/First-Use-Guide.md) for controls and preset values.
 
 ## Optional: try the example
 
-Open `Assets/BOM/Fixtures/ReferenceLevel.unity` and select **BOM Reference Level** in the Hierarchy.
-
-In **Playtest**, click **Validate full level**, then **Enter Play mode**. Choose a captured explosion preset and **Shift-click outside the structure in Scene view** to blast it.
-
-Use **Reset to last captured start** to try again. Destruction does not change the saved pieces. Stop Play mode before editing.
+Open `Assets/BOM/Fixtures/ReferenceLevel.unity`, select **BOM Reference Level**, and follow the playtest steps below. Fixtures are verification examples; reusable starters live in `Assets/BOM/Presets`.
 
 ## Make an asset
 
-1. Export a static FBX from Blender and drag it into Unity's Project window. In **Import / review**, drag that imported model into **Model (FBX)**.
-2. Choose your projection plane: **XY** for the front, **XZ** for the top, or **YZ** for the side. Coordinates are in metres.
-3. Drag outline points. Double-click an edge to add a point; select a point and press **Delete** to remove it. **Add hole** creates an opening. Scroll to zoom, middle-drag to pan, or use **Fit outline**. Escape cancels a drag; Ctrl+Z undoes edits.
-4. Choose or create a **Gameplay material** (density and blast resistance) and a **Destruction response** (fragment impulse). Review thickness, colours and the optional face image in the 3D preview.
-5. Resolve validation messages, then click **Approve and continue to placement** and save the piece. Exact coordinates and texture mapping are under **Advanced**.
+1. Export a static FBX from Blender, import it into Unity, then drop it into **Model (FBX)** under **Import**.
+2. Choose **Front**, **Top**, or **Side**. Compare **Source + outline** with **Result**; edit points in the flat outline.
+3. Check **Width (m)** and **Height (m)**. Thickness is visual; mass is solid area × density.
+4. Choose **Default** for **Physics material** (mass/resistance) and **Standard** for **Response** (blast push). **Presets** switches starters; **Duplicate** makes an editable copy.
+5. Under **Appearance**, **Import appearance** copies a Unity material's base colour and texture into BOM's shader.
+6. Resolve validation messages, then **Save piece** or **Save and place**. Click in Scene view to place; Escape cancels placement.
 
-Keep your models and pieces in your own folders under `Assets`. Use **Review existing piece** to edit a saved piece; changes apply only when approved.
+Save assets under `Assets`. Select an existing **Piece** to edit. Piece edits require saving; inline **Shared** asset edits save immediately for every use, even after **Discard edits**.
 
 ## Build a level
 
-Save a copy of StarterLevel in your own level folder. In **Place**, select its level group, choose a **Piece**, then click **Place piece**. Use **Create level authoring group** for a separate group.
+Save a copy of StarterLevel. In **Place**, choose its level group and a **Piece**, then **Place in scene** and click to place.
 
-Move pieces with Scene handles: keep Z = 0, rotate around Z, and use positive X/Y scales. Select floors or anchors and click **Make selected pieces fixed supports**. Placement Inspectors offer overrides without changing the shared piece asset.
+Move in XY, rotate around Z, and use positive X/Y scales with Z scale = 1. Select floors or anchors and **Make selected pieces fixed supports**.
 
-To join pieces, make their edges touch and select both. In **Connect**, click **Use two selected pieces**, **Propose shared-boundary bond**, then **Confirm connection**. Gaps and touching corners are not bonds. Save reusable groups as ordinary Unity prefabs.
+To join touching edges, select both pieces. In **Connect**, click **Use two selected pieces**, **Propose shared-boundary bond**, then **Confirm connection**. Gaps and touching corners cannot bond. Save reusable groups as Unity prefabs.
 
 ## Test your level
 
-In **Playtest**, choose or **Create preset and add to level...**. Set its radius, reach budget and fragment impulse speed in the Inspector. Validate and enter Play mode. Restart the test to include changed presets or authoring inputs.
+1. In **Playtest**, if the level has no presets, choose **Medium** through **Presets**, then **Add selected preset to level**.
+2. Click **Validate full level**, then **Enter Play mode**. Choose a captured explosion preset and Shift-click exterior air in Scene view.
+3. Use **Reset to last captured start** to retry. Stop Play mode before editing; restart to capture changes. Saved pieces are preserved.
 
-Explosions must start in exterior air, not inside solid pieces or enclosed holes. Player controls, multiplayer and bomb/fuse gameplay are not included.
+Blast origins inside solids or enclosed holes are unsupported. Player controls, multiplayer and bomb/fuse gameplay are not included.
 
 ## Contribute
 
-Create a branch and open a pull request with your assets or scenes. Include their `.meta` files. Move and rename assets through Unity's Project window to preserve references.
-
-<details>
-<summary>For programmers</summary>
-
-Code lives in `Assets/BOM/Runtime` and `Assets/BOM/Editor`; tests are in `Assets/BOM/Tests`. Before submitting code changes, run EditMode and PlayMode tests in **Window > General > Test Runner**.
-
-</details>
+Create a branch and open a pull request. Include asset `.meta` files; move and rename assets through Unity to preserve references. Code is in `Assets/BOM/Runtime` and `Assets/BOM/Editor`. Run EditMode and PlayMode tests in **Window > General > Test Runner** before submitting code changes.

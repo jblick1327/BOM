@@ -1,21 +1,23 @@
 # BOM authoring
 
-Open **BOM > Authoring workspace**. For an existing example, open `Assets/BOM/Fixtures/ReferenceLevel.unity`.
+Open **BOM > Authoring workspace**. See the [README](../README.md) for project setup and an example level.
 
 ## Import
 
-1. Drop a Blender-exported FBX into **Model (FBX)**. Choose **Front**, **Top**, or **Side** from the silhouette previews. An outlined card suggests a usable view when the current projection is empty.
-2. Compare **Source + outline** with **Result**. Click an outline point in either view to select it. Right-drag the model preview to orbit; drag points in the flat outline to edit. Double-click an edge to insert a point. Delete removes the selected point; Escape cancels a drag. Undo/Redo work normally.
-3. Check the dimensions and scale bar. Width and height are in metres; proportions are locked initially. Imported root unit scaling is preserved. Thickness is visual; mass comes from solid area and the selected density.
-4. Choose a **Physics material** and, for destructible pieces, a **Response**. Fresh imports use **Default** and **Standard**, or your last saved choices. Use **Presets** for other starters and **Duplicate** to customize a copy. **Shared** means inline edits are saved immediately and affect every use, including when piece edits are discarded.
-5. Adjust **Appearance**. **Import appearance** copies the selected Unity material's base colour and texture; the result uses BOM's extrusion shader. Arbitrary source shaders, UV layouts and multiple material slots are not reproduced by the extrusion.
-6. Use **Save piece** or **Save and place**. The save name follows the source model; the output folder and saved material/response selections are remembered.
+1. Import a static FBX into Unity, then drop it into **Model (FBX)**. Choose **Front**, **Top**, or **Side** from the silhouette previews.
+2. Compare **Source + outline** with **Result**. Click points in either view to select; edit in the flat outline. Right-drag the model preview to orbit.
+3. Check dimensions and the scale bar. Width/height are in metres; proportions start locked. Imported root unit scaling is preserved. Gameplay runs in XY; thickness is visual. Mass = solid area × density.
+4. Choose **Physics material** and **Response**: initially **Default** and **Standard**, then your last saved choices. Use **Presets** to switch.
+5. **Import appearance** copies a Unity material's base colour and texture into BOM's extrusion shader. Source shaders, UV layouts and multiple material slots are not reproduced.
+6. Resolve validation messages, then **Save piece** or **Save and place**. The output folder and material/response choices are remembered. Choose a saved **Piece** to edit it.
 
-Click a disconnected region and use **Keep selected region** to retain it. Only one connected region can be saved as one piece. **Rebuild outline** requires confirmation before replacing manual corrections. Exact coordinates, source conversion and texture mapping remain under **Advanced**.
+Drag points to edit; double-click an edge to add a point; Delete removes it. Scroll to zoom, middle-drag to pan, or **Fit**. **Add hole** creates an opening. Escape cancels a drag; Undo/Redo are supported.
+
+For disconnected outlines, click a region and **Keep selected region**; one connected region is allowed per piece. **Rebuild outline** confirms before replacing manual edits. Source conversion and texture mapping are under **Advanced**.
 
 ## Starter presets
 
-The library is in `Assets/BOM/Presets`, with subfolders for materials, responses and explosions. Supplied starters are read-only in the authoring window; duplicate one to edit it. **BOM > Create missing starter presets** restores missing assets without overwriting existing ones. Verification examples remain in `Assets/BOM/Fixtures`.
+`Assets/BOM/Presets` contains materials, responses and explosions; `Assets/BOM/Fixtures` contains verification examples. Starters are read-only in the authoring window: **Duplicate** to customize. Inline **Shared** edits save immediately and affect every use; discarding piece edits does not undo them. **BOM > Create missing starter presets** restores missing starters without overwriting existing assets.
 
 | Material | Density (kg/m²) | Blast resistance |
 | --- | ---: | ---: |
@@ -24,7 +26,7 @@ The library is in `Assets/BOM/Presets`, with subfolders for materials, responses
 | Heavy | 4 | 1 |
 | Tough | 2 | 3 |
 
-All four use friction 0.5, no bounce, and linear/angular damping 0.1. These are gameplay choices rather than physical wood or metal specifications. Density changes mass; blast resistance changes penetration. **Standard** uses the explosion's added speed; **No push** still destroys material but adds no speed. Density does not change the added speed.
+All use friction 0.5, no bounce, and linear/angular damping 0.1. These are gameplay values. Density changes mass; resistance reduces penetration. **Standard** applies blast push; **No push** destroys without adding speed. Added speed is multiplied by the response and piece's **Push multiplier**, independent of density.
 
 | Explosion | Max radius (m) | Reach budget | Added speed (m/s) |
 | --- | ---: | ---: | ---: |
@@ -32,16 +34,20 @@ All four use friction 0.5, no bounce, and linear/angular damping 0.1. These are 
 | Medium | 2 | 4 | 1 |
 | Large | 4 | 8 | 2 |
 
-Air spends one reach unit per metre; material adds its resistance to that cost. Radius is a maximum. Actual damage depends on blast position, shape and shielding; a larger blast does not guarantee splitting or removal.
+Reach costs 1 unit/m in air and 1 + resistance in solids. Radius caps reach; position, shape and shielding determine damage.
 
 ## Place and connect
 
-**Save and place** starts a scene placement preview, creating a level group if needed. Click to place; Escape cancels placement. **Place at view centre** places immediately and frames the piece. The preview shows its scene size against the grid.
+**Save and place** previews scene size against the grid, creating a level group if needed. Click to place; Escape cancels. In **Place**, **Place in scene** also previews; **Place at view centre** places immediately and frames the piece.
 
-Move in XY and rotate about Z. A selected piece's scale handle changes X/Y and keeps Z at 1. When scaling parent groups, keep Z at 1 and avoid shear or reflection. The placement Inspector shows resulting dimensions and mass, along with independent material, destruction and grab overrides.
+Move in XY and rotate about Z. Use positive X/Y scales; keep Z scale = 1, including parent groups, and avoid shear. The placement Inspector shows scene dimensions, mass and overrides. Scaling changes area and mass.
 
-Select placements to mark fixed supports. Select two touching pieces in **Connect**, propose their shared boundary, and confirm the highlighted attachment. Alignment remains a preview until confirmation.
+Mark floors or anchors as fixed supports. Select two pieces with touching edges in **Connect**, propose their shared boundary, and confirm the highlighted attachment. Alignment is a preview until confirmed.
 
 ## Playtest
 
-New level groups include **Medium**. Use **Presets** to choose another blast, then add it to the level. Select a configured preset to see its values; **Duplicate** uses an editable copy in this level. Validate the level, then enter Play mode. Shift-click exterior air in Scene view or enter an XY origin and use **Run explosion**. **Reset to last captured start** restores the frozen start; starting again captures current authoring values. Source assets are preserved. Origins inside solids or enclosed cavities are unsupported.
+New level groups include **Medium**. Choose blasts through **Presets** and **Add selected preset to level**. Select one to inspect its values; **Duplicate** makes this level use an editable copy.
+
+**Validate full level**, then **Enter Play mode**. Choose a captured preset and Shift-click exterior air in Scene view, or enter an XY origin and **Run explosion**. Origins inside solids or enclosed holes are unsupported.
+
+**Reset to last captured start** restores the captured level. Stop Play mode to edit; restart to capture changes. Saved pieces are preserved.
