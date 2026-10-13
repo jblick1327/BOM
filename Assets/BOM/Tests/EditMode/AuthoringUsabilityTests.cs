@@ -216,7 +216,7 @@ namespace BOM.Tests
         {
             var approved=Piece();var before=JsonUtility.ToJson(approved.Draft());var w=FailedInitialProjection();
             Act(w,"CreateMaterial",folder+"/RepairMaterial.asset");Act(w,"CreateResponse",folder+"/RepairResponse.asset");var pending=Get<PieceDraft>(w,"draft");var material=pending.material;var response=pending.destruction.response;
-            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Impulse multiplier").value=3.25f;
+            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Push multiplier").value=3.25f;
             w.rootVisualElement.Query<Toggle>().ToList().Single(f=>f.label=="Grabbable").value=false;
             w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Thickness (m)").value=.45f;
             w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Face").value=Color.magenta;
@@ -243,7 +243,7 @@ namespace BOM.Tests
             w.rootVisualElement.Query<EnumField>().ToList().Single(f=>f.label=="Projection plane").value=ProjectionPlane.YZ;
             var updated=Get<PieceDraft>(w,"draft");Assert.That(Geometry.TryValidate(updated.profile,out var error),Is.True,error);
             Assert.That(JsonUtility.ToJson(updated.appearance),Is.EqualTo(JsonUtility.ToJson(expected.appearance)));Assert.That(updated.thickness,Is.EqualTo(expected.thickness));
-            Assert.That(updated.appearance.u,Is.Not.EqualTo(Vector2.right));Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
+            Assert.That(updated.appearance.u,Is.Not.EqualTo(Vector2.right));Assert.That(Find(w,"Save piece").enabledSelf,Is.True);
         }
         [Test,Category("V3Review")] public void FailedInitialProjectionRetainsColourWithoutSuppressingFirstUvInference()
         {
@@ -340,11 +340,13 @@ namespace BOM.Tests
             var updated=Get<PieceDraft>(w,"draft");Assert.That(Geometry.Area(updated.profile),Is.EqualTo(area*4).Within(.001));
             Assert.That(updated.material,Is.SameAs(material));Assert.That(updated.destruction.response,Is.SameAs(response));Assert.That(updated.appearance.face,Is.EqualTo(Color.magenta));Assert.That(Get<bool>(w,"conversionDirty"),Is.False);
         }
-        [Test] public void FreshImportCanCreateRequirementsApprovePlaceSetSupportsAndAddNamedPreset()
+        [Test] public void FreshImportUsesStartersAndCanCustomizeApprovePlaceSetSupportsAndAddNamedPreset()
         {
             var level=Level();var w=Window(null,0,level);var model=AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.Folder+"/Source/MultiMeshFrame.fbx");
             w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Model (FBX)").value=model;
-            Assert.That(Get<PieceDraft>(w,"draft"),Is.Not.Null);Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
+            Assert.That(Get<PieceDraft>(w,"draft"),Is.Not.Null);Assert.That(Find(w,"Save piece").enabledSelf,Is.True);
+            Assert.That(Get<PieceDraft>(w,"draft").material,Is.SameAs(StarterPresets.Get<MaterialDefinition>("Default")));
+            Assert.That(Get<PieceDraft>(w,"draft").destruction.response,Is.SameAs(StarterPresets.Get<DestructionResponse>("Standard")));
             Act(w,"CreateMaterial",folder+"/Material.asset");Act(w,"CreateResponse",folder+"/Response.asset");Assert.That(Find(w,"Save piece").enabledSelf,Is.True);
             Assert.That((bool)Act(w,"Approve",folder+"/Piece.asset"),Is.True);var approved=AssetDatabase.LoadAssetAtPath<PieceDefinition>(folder+"/Piece.asset");Assert.That(approved.IsApproved,Is.True);
             Set(w,"tab",1);Act(w,"Build");Click(w,"Place at view centre");Assert.That(level.GetComponentsInChildren<PiecePlacement>(),Has.Length.EqualTo(1));
@@ -358,6 +360,56 @@ namespace BOM.Tests
             var first=BomAuthoringAssets.Create<MaterialDefinition>(folder+"/Keep.asset","Keep",out var error);Assert.That(first,Is.Not.Null,error);first.density=7;
             Assert.That(BomAuthoringAssets.Create<MaterialDefinition>(folder+"/Keep.asset","Keep",out error),Is.Null);Assert.That(first.density,Is.EqualTo(7));
             Assert.That(BomAuthoringAssets.NewPath("Assets/../Outside.asset",out _),Is.False);Assert.That(BomAuthoringAssets.NewPath("C:/Outside.asset",out _),Is.False);
+            Assert.That(BomAuthoringAssets.Duplicate(first,folder+"/Keep.asset",out error),Is.Null);Assert.That(first.density,Is.EqualTo(7));
+            Assert.That(BomAuthoringAssets.Duplicate(first,"Assets/../Outside.asset",out error),Is.Null);
+        }
+        [Test,Category("StarterPresets")] public void StarterMenuChangesPendingMaterialAndProtectsLibraryValues()
+        {
+            var piece=Piece();var before=JsonUtility.ToJson(piece.Draft());var w=Window(piece);
+            var menu=w.rootVisualElement.Q<ToolbarMenu>("materialPresets");
+            menu.menu.MenuItems().OfType<DropdownMenuAction>().Single(a=>a.name=="Heavy").Execute();
+            Assert.That(Get<PieceDraft>(w,"draft").material,Is.SameAs(StarterPresets.Get<MaterialDefinition>("Heavy")));
+            Assert.That(w.rootVisualElement.Q<Label>("materialSharing").text,Is.EqualTo("Starter"));
+            Assert.That(w.rootVisualElement.Q<PropertyField>("physics-density").enabledInHierarchy,Is.False);
+            Assert.That(w.rootVisualElement.Q<Button>("materialDuplicate").enabledInHierarchy,Is.True);
+            Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));Assert.That(w.rootVisualElement.Q<Label>("dimensions").text,Does.Contain("64 kg"));
+        }
+        [UnityTest,Category("StarterPresets")] public IEnumerator DuplicatedMaterialAndResponseAreEditableWithoutChangingStarterOrApprovedPiece()
+        {
+            var piece=Piece();var d=piece.Draft();d.material=StarterPresets.Get<MaterialDefinition>("Default");d.destruction.response=StarterPresets.Get<DestructionResponse>("No push");
+            Assert.That(piece.TryApprove(d,out _),Is.True);var before=JsonUtility.ToJson(piece.Draft());var w=Window(piece);
+            Act(w,"DuplicateMaterial",folder+"/MyMaterial.asset");Act(w,"DuplicateResponse",folder+"/MyResponse.asset");yield return null;yield return null;
+            var draft=Get<PieceDraft>(w,"draft");Assert.That(draft.material,Is.Not.SameAs(d.material));Assert.That(draft.destruction.response,Is.Not.SameAs(d.destruction.response));
+            Assert.That(w.rootVisualElement.Q<Label>("materialSharing").text,Is.EqualTo("Shared"));Assert.That(w.rootVisualElement.Q<Label>("responseSharing").text,Is.EqualTo("Shared"));
+            var density=w.rootVisualElement.Q<PropertyField>("physics-density");Assert.That(density.enabledInHierarchy,Is.True);density.Q<FloatField>().value=7;
+            w.rootVisualElement.Q<PropertyField>("physics-impulseScale").Q<FloatField>().value=.5f;yield return null;yield return null;
+            Assert.That(draft.material.density,Is.EqualTo(7));Assert.That(draft.destruction.response.impulseScale,Is.EqualTo(.5f));
+            Assert.That(d.material.density,Is.EqualTo(2));Assert.That(d.destruction.response.impulseScale,Is.Zero);Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
+            w.DiscardChanges();Assert.That(Get<PieceDraft>(w,"draft").material,Is.SameAs(d.material));
+        }
+        [Test,Category("StarterPresets")] public void RememberedCustomSelectionsTakePrecedenceOverStarterDefaults()
+        {
+            var material=BomAuthoringAssets.Create<MaterialDefinition>(folder+"/RememberedMaterial.asset","RememberedMaterial",out _);
+            var response=BomAuthoringAssets.Create<DestructionResponse>(folder+"/RememberedResponse.asset","RememberedResponse",out _);
+            EditorPrefs.SetString("BOM.Authoring.Material",AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(material)));
+            EditorPrefs.SetString("BOM.Authoring.Response",AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(response)));
+            var w=Window();Act(w,"SelectSource",AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.SourcePath));
+            Assert.That(Get<PieceDraft>(w,"draft").material,Is.SameAs(material));Assert.That(Get<PieceDraft>(w,"draft").destruction.response,Is.SameAs(response));
+            Assert.That(w.rootVisualElement.Q<PropertyField>("physics-density").enabledInHierarchy,Is.True);
+        }
+        [UnityTest,Category("StarterPresets")] public IEnumerator DuplicatingConfiguredExplosionUsesCopyInOnlyThisLevel()
+        {
+            var original=StarterPresets.Get<ExplosionPreset>("Medium");var level=Level();level.testPresets.Add(original);var other=Level();other.testPresets.Add(original);
+            var w=Window(null,3,level);Assert.That(w.rootVisualElement.Q<PropertyField>("physics-radius").enabledInHierarchy,Is.False);
+            w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Preset").value=null;
+            Assert.That(Get<ExplosionPreset>(w,"presetToAdd"),Is.Null);Assert.That(w.rootVisualElement.Q<Button>("blastDuplicate").enabledSelf,Is.False);
+            w.rootVisualElement.Q<ToolbarMenu>("blastPresets").menu.MenuItems().OfType<DropdownMenuAction>().Single(a=>a.name=="Medium").Execute();
+            Act(w,"DuplicatePreset",folder+"/MyBlast.asset");yield return null;yield return null;
+            var copy=AssetDatabase.LoadAssetAtPath<ExplosionPreset>(folder+"/MyBlast.asset");Assert.That(copy,Is.Not.Null);Assert.That(level.testPresets.Single(),Is.SameAs(copy));
+            Assert.That(other.testPresets.Single(),Is.SameAs(original));Assert.That(w.rootVisualElement.Q<Label>("blastSharing").text,Is.EqualTo("Shared"));
+            var radius=w.rootVisualElement.Q<PropertyField>("physics-radius");Assert.That(radius.enabledInHierarchy,Is.True);radius.Q<FloatField>().value=3;yield return null;yield return null;
+            Assert.That(copy.radius,Is.EqualTo(3));Assert.That(original.radius,Is.EqualTo(2));
+            Assert.That(w.rootVisualElement.Q<DropdownField>("explosionPreset").choices.Single(),Does.Contain("MyBlast"));
         }
         [UnityTest] public IEnumerator DragSnapsThePointAndRetainsUnsavedCloseProtection()
         {

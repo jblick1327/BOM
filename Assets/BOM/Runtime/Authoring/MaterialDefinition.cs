@@ -5,7 +5,9 @@ namespace BOM
     [CreateAssetMenu(menuName = "BOM/Gameplay material")]
     public sealed class MaterialDefinition : ScriptableObject
     {
+        [Tooltip("Mass per square metre of solid profile. Visual thickness does not affect mass.")]
         [Min(.00001f)] public float density = 2;
+        [Tooltip("Additional blast reach cost per metre of solid material. Higher values reduce penetration.")]
         [Min(0)] public float blastResistance = 1;
         [Min(0)] public float friction = .5f;
         [Range(0, 1)] public float restitution;

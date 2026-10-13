@@ -21,6 +21,7 @@ namespace BOM.Editor
         [SerializeField] private bool appearanceProposed;
         [SerializeField] private AppearanceEdits appearanceEdits;
         [SerializeField] private ExplosionPreset presetToAdd;
+        [SerializeField] private bool presetSelectionInitialized;
         private PieceDefinition placementAsset;
         private PiecePlacement endpointA,endpointB;
         private ConnectionAuthoring editingConnection;
@@ -267,10 +268,14 @@ namespace BOM.Editor
         {var asset=BomAuthoringAssets.Create<MaterialDefinition>(path,"NewMaterial",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.material=asset;Changed();Build();Message("Material created.");}
         private void CreateResponse(string path=null)
         {var asset=BomAuthoringAssets.Create<DestructionResponse>(path,"NewDestructionResponse",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.destruction.response=asset;Changed();Build();Message("Response created.");}
+        private void DuplicateMaterial(string path=null)
+        {var copy=BomAuthoringAssets.Duplicate(draft.material,path,out var error);if(copy==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.material=copy;Changed();Build();Message("Using "+copy.name+". Save piece to keep this selection.");}
+        private void DuplicateResponse(string path=null)
+        {var copy=BomAuthoringAssets.Duplicate(draft.destruction.response,path,out var error);if(copy==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.destruction.response=copy;Changed();Build();Message("Using "+copy.name+". Save piece to keep this selection.");}
         private void LevelField(VisualElement parent)
         {
             if(level==null&&Selection.activeGameObject!=null) level=Selection.activeGameObject.GetComponentInParent<LevelAuthoring>();
-            ObjectField<LevelAuthoring>(parent,"Level",level,v=>{level=v;SetConnectionEndpoints(null,null);},true);
+            ObjectField<LevelAuthoring>(parent,"Level",level,v=>{level=v;presetToAdd=null;presetSelectionInitialized=false;SetConnectionEndpoints(null,null);},true);
         }
         private void PlacementUI()
         {
@@ -291,7 +296,7 @@ namespace BOM.Editor
             Button(section,"Continue to connections",()=>{tab=2;Build();},true,()=>level!=null&&level.GetComponentsInChildren<PiecePlacement>(true).Length>0);
         }
         private void CreateLevel()
-        {var go=new GameObject("BOM Level");Undo.RegisterCreatedObjectUndo(go,"Create BOM level");level=go.AddComponent<LevelAuthoring>();Selection.activeGameObject=go;Build();Message("Level created.");}
+        {var go=new GameObject("BOM Level");Undo.RegisterCreatedObjectUndo(go,"Create BOM level");level=go.AddComponent<LevelAuthoring>();var starter=StarterPresets.Get<ExplosionPreset>("Medium");if(starter!=null)level.testPresets.Add(starter);presetToAdd=null;presetSelectionInitialized=false;Selection.activeGameObject=go;Build();Message("Level created.");}
         private void PlacePiece()
         {
             var view=SceneView.lastActiveSceneView;PlacePieceAt(view!=null?(Vector2)view.pivot:Vector2.zero);
@@ -365,11 +370,19 @@ namespace BOM.Editor
             inputs.tooltip="Playtests capture a copy of the level. Restart to include authoring changes.";
             var setup=Section("Shared explosion presets");
             setup.tooltip="Radius, reach budget and impulse are captured at test start.";
-            ObjectField<ExplosionPreset>(setup,"Preset to add",presetToAdd,v=>{presetToAdd=v;RefreshActions();});
+            setup.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            if(!presetSelectionInitialized){presetToAdd=presetToAdd??level?.testPresets?.FirstOrDefault(p=>p!=null)??StarterPresets.Get<ExplosionPreset>("Medium");presetSelectionInitialized=true;}
+            ObjectField<ExplosionPreset>(setup,"Preset",presetToAdd,v=>{presetToAdd=v;Build();});
+            DefinitionActions(setup,"blast",presetToAdd,v=>{presetToAdd=v;Build();},()=>DuplicatePreset(),"New preset",()=>CreatePreset(),level!=null);
+            InlineProperties(setup,presetToAdd,"radius","reachBudget","impulseSpeed");
             Button(setup,"Add selected preset to level",()=>{AddPreset(presetToAdd);Build();},false,()=>!Application.isPlaying&&level!=null&&presetToAdd!=null&&presetToAdd.TryValidate(out _)&&!(level.testPresets?.Contains(presetToAdd)??false));
-            Button(setup,"Create preset and add to level...",()=>CreatePreset(),false,()=>!Application.isPlaying&&level!=null);
             if(level?.testPresets==null||level.testPresets.Count==0)Help(setup,"Add an explosion preset.");
-            else foreach(var configured in level.testPresets)Help(setup,configured==null?"Missing preset: replace the reference in the level Inspector.":configured.name+" — radius "+configured.radius+" m, reach budget "+configured.reachBudget+", impulse speed "+configured.impulseSpeed+" m/s");
+            else foreach(var configured in level.testPresets)
+            {
+                var row=new VisualElement();row.AddToClassList("bom-row");setup.Add(row);var name=new Label(configured!=null?configured.name:"Missing preset");name.AddToClassList("bom-flex");row.Add(name);
+                Button(row,"Select",()=>{presetToAdd=configured;Build();},false,()=>configured!=null);
+                Button(row,"Remove",()=>{Undo.RecordObject(level,"Remove BOM explosion preset");level.testPresets.Remove(configured);EditorUtility.SetDirty(level);EditorSceneManager.MarkSceneDirty(level.gameObject.scene);Build();});
+            }
             Button(setup,"Refresh preset list",Build);
             Button(inputs,"Validate full level",Compile,false,()=>level!=null);
             Func<bool> canStart=()=>level!=null&&level.GetComponentsInChildren<PiecePlacement>(true).Length>0&&level.testPresets!=null&&level.testPresets.Count>0&&level.testPresets.All(p=>p!=null&&p.TryValidate(out _));
@@ -401,7 +414,17 @@ namespace BOM.Editor
             EditorUtility.SetDirty(level);EditorSceneManager.MarkSceneDirty(level.gameObject.scene);
         }
         private void CreatePreset(string path=null)
-        {if(level==null||Application.isPlaying)return;var asset=BomAuthoringAssets.Create<ExplosionPreset>(path,"NewExplosionPreset",out var error);if(asset==null){if(error!=null)Message(error);return;}AddPreset(asset);Build();Selection.activeObject=asset;Message("Preset created and added. Edit its radius, reach budget and impulse speed in the Inspector, then start a test.");}
+        {if(level==null||Application.isPlaying)return;var asset=BomAuthoringAssets.Create<ExplosionPreset>(path,"NewExplosionPreset",out var error);if(asset==null){if(error!=null)Message(error);return;}AddPreset(asset);Build();Message("Preset created and added. Edit its values here.");}
+        private void DuplicatePreset(string path=null)
+        {
+            if(level==null||Application.isPlaying)return;var sourcePreset=presetToAdd;var copy=BomAuthoringAssets.Duplicate(sourcePreset,path,out var error);
+            if(copy==null){if(error!=null)Message(error);return;}
+            Undo.RecordObject(this,"Choose duplicated BOM explosion preset");
+            int index=level.testPresets?.IndexOf(sourcePreset)??-1;
+            if(index>=0){Undo.RecordObject(level,"Use duplicated BOM explosion preset");level.testPresets[index]=copy;presetToAdd=copy;EditorUtility.SetDirty(level);EditorSceneManager.MarkSceneDirty(level.gameObject.scene);}
+            else AddPreset(copy);
+            Build();Message("Level uses "+copy.name+". The original preset is unchanged.");
+        }
         private void Tick() => RenderImportPreview();
         private void SceneGUI(SceneView view)
         {

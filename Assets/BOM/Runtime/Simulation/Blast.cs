@@ -98,6 +98,14 @@ namespace BOM
             }
             var points=events.Where(a=>a<2*Math.PI).Select(a=>origin+new Vector2((float)(Math.Cos(a)*Radius(a)),(float)(Math.Sin(a)*Radius(a))));
             var cutter=Geometry.Normalize(new Region {outer=new Contour(points)});
+            var ring=cutter.outer;int vertex=0;
+            while(vertex<ring.points.Count&&ring.points.Count>3)
+            {
+                int next=(vertex+1)%ring.points.Count;
+                if(Vector2.Distance(ring.points[vertex],ring.points[next])>Geometry.Tolerance*2){vertex++;continue;}
+                int remove=(ring.points[vertex]-origin).sqrMagnitude<=(ring.points[next]-origin).sqrMagnitude?next:vertex;
+                ring.points.RemoveAt(remove);ring.cutEdges.RemoveAt(remove);vertex=Math.Max(0,vertex-1);
+            }
             if(!Geometry.TryValidate(cutter,out var error)) throw new InvalidOperationException("Explosion field: "+error+" Move the origin farther from a surface.");
             return cutter;
         }

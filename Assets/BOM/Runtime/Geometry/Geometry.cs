@@ -228,12 +228,12 @@ namespace BOM
             {
                 double denominator = Cross(delta, e.b - e.a);
                 double lineTolerance=Tolerance*Math.Sqrt(delta.sqrMagnitude);
-                if(delta.sqrMagnitude>0&&Math.Abs(Cross(delta,e.a-a))<=lineTolerance&&Math.Abs(Cross(delta,e.b-a))<=lineTolerance)
+                if(delta.sqrMagnitude>0)
                 {
-                    t.Add(Math.Max(0,Math.Min(1,Vector2.Dot(e.a-a,delta)/delta.sqrMagnitude)));
-                    t.Add(Math.Max(0,Math.Min(1,Vector2.Dot(e.b-a,delta)/delta.sqrMagnitude)));
+                    if(Math.Abs(Cross(delta,e.a-a))<=lineTolerance)t.Add(Math.Max(0,Math.Min(1,Vector2.Dot(e.a-a,delta)/delta.sqrMagnitude)));
+                    if(Math.Abs(Cross(delta,e.b-a))<=lineTolerance)t.Add(Math.Max(0,Math.Min(1,Vector2.Dot(e.b-a,delta)/delta.sqrMagnitude)));
                 }
-                else if (Math.Abs(denominator) > 1e-12)
+                if (Math.Abs(denominator) > 1e-12)
                 {
                     double u = Cross(e.a - a, e.b - e.a) / denominator, v = Cross(e.a - a, delta) / denominator;
                     if (u > 0 && u < 1 && v >= 0 && v <= 1) t.Add(u);

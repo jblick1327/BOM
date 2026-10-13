@@ -24,5 +24,15 @@ namespace BOM.Editor
             try{AssetDatabase.CreateAsset(asset,path);Undo.RegisterCreatedObjectUndo(asset,"Create BOM definition");AssetDatabase.SaveAssetIfDirty(asset);return asset;}
             catch(System.Exception e){if(!AssetDatabase.Contains(asset))Object.DestroyImmediate(asset);error="Could not create the definition: "+e.Message;return null;}
         }
+        public static T Duplicate<T>(T source,string path,out string error) where T:ScriptableObject
+        {
+            error=null;if(source==null){error="Choose an asset to duplicate.";return null;}
+            string folder=EditorPrefs.GetString("BOM.Authoring.Folder","Assets");if(!AssetDatabase.IsValidFolder(folder))folder="Assets";
+            path=path??EditorUtility.SaveFilePanelInProject("Duplicate BOM asset",source.name+" Copy","asset","Save an independent copy.",folder);
+            if(string.IsNullOrEmpty(path)||!NewPath(path,out error))return null;
+            var copy=Object.Instantiate(source);copy.name=Path.GetFileNameWithoutExtension(path);
+            try{AssetDatabase.CreateAsset(copy,path);Undo.RegisterCreatedObjectUndo(copy,"Duplicate BOM asset");AssetDatabase.SaveAssetIfDirty(copy);return copy;}
+            catch(System.Exception e){if(!AssetDatabase.Contains(copy))Object.DestroyImmediate(copy);error="Could not duplicate the asset: "+e.Message;return null;}
+        }
     }
 }

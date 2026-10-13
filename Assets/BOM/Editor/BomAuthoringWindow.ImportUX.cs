@@ -101,15 +101,18 @@ namespace BOM.Editor
 
             var physics=Group(content,"Physical properties");
             ObjectField<MaterialDefinition>(physics,"Physics material",draft.material,v=>{BeginDraftEdit();draft.material=v;Changed();Build();});
-            Button(physics,"New material",()=>CreateMaterial());InlineProperties(physics,draft.material,"density","blastResistance","friction","restitution","linearDamping","angularDamping");
+            DefinitionActions(physics,"material",draft.material,v=>{BeginDraftEdit();draft.material=v;Changed();Build();},()=>DuplicateMaterial(),"New material",()=>CreateMaterial());
+            InlineProperties(physics,draft.material,"density","blastResistance","friction","restitution","linearDamping","angularDamping");
             var mode=new DropdownField("Destruction",new System.Collections.Generic.List<string> {"Destructible","Indestructible"},draft.destruction.mode==DestructionMode.Subtract?0:1);
             mode.RegisterValueChangedCallback(_=>{BeginDraftEdit();draft.destruction.mode=mode.index==0?DestructionMode.Subtract:DestructionMode.Indestructible;Changed();Build();});physics.Add(mode);
             if(draft.destruction.mode==DestructionMode.Subtract)
             {
                 ObjectField<DestructionResponse>(physics,"Response",draft.destruction.response,v=>{BeginDraftEdit();draft.destruction.response=v;Changed();Build();});
-                Button(physics,"New response",()=>CreateResponse());InlineProperties(physics,draft.destruction.response,"impulseScale");
+                DefinitionActions(physics,"response",draft.destruction.response,v=>{BeginDraftEdit();draft.destruction.response=v;Changed();Build();},()=>DuplicateResponse(),"New response",()=>CreateResponse());
+                InlineProperties(physics,draft.destruction.response,"impulseScale");
             }
-            Float(physics,"Impulse multiplier",draft.destruction.impulseMultiplier,v=>draft.destruction.impulseMultiplier=v);
+            Float(physics,"Push multiplier",draft.destruction.impulseMultiplier,v=>draft.destruction.impulseMultiplier=v);
+            physics.tooltip="Density controls mass. Blast push adds speed, multiplied by the explosion preset, response and piece settings.";
             Toggle(physics,"Grabbable",draft.grabEligible,v=>draft.grabEligible=v);
 
             var appearance=Group(content,"Appearance");
@@ -141,15 +144,34 @@ namespace BOM.Editor
             Button(footer,"Discard edits",()=>{BeginDraftEdit();draft=editing!=null?editing.Draft():null;conversionDirty=false;draftEdited=false;appearanceProposed=editing!=null;appearanceEdits=AppearanceEdits.None;inference=null;Build();Message("Edits discarded.");});
             UpdateValidation();previewDirty=true;
         }
+        private void DefinitionActions<T>(VisualElement parent,string id,T asset,Action<T> select,Action duplicate,string newLabel,Action create,bool available=true) where T:ScriptableObject
+        {
+            var row=new VisualElement();row.AddToClassList("bom-row");parent.Add(row);
+            var menu=new ToolbarMenu {text="Presets",name=id+"Presets"};row.Add(menu);
+            var starters=StarterPresets.All<T>();menu.SetEnabled(starters.Length>0);
+            foreach(var starter in starters)
+            {var chosen=starter;menu.menu.AppendAction(chosen.name,_=>select(chosen),chosen==asset?DropdownMenuAction.Status.Checked:DropdownMenuAction.Status.Normal);}
+            menu.tooltip="Choose a starter preset. Duplicate it to customize its values.";
+            Button(row,"Duplicate",duplicate,false,()=>available&&asset!=null&&!Application.isPlaying).name=id+"Duplicate";
+            Button(row,newLabel,create,false,()=>available&&!Application.isPlaying);
+            if(asset!=null)
+            {
+                var sharing=new Label(StarterPresets.IsStarter(asset)?"Starter":"Shared") {name=id+"Sharing",tooltip=StarterPresets.Description(asset)};
+                sharing.AddToClassList("bom-asset-note");row.Add(sharing);
+            }
+        }
         private void InlineProperties(VisualElement parent,ScriptableObject asset,params string[] names)
         {
             if(asset==null)return;
-            var serialized=new SerializedObject(asset);var fields=new VisualElement {tooltip="Shared asset: changes affect all pieces using it."};parent.Add(fields);
+            var serialized=new SerializedObject(asset);var fields=new VisualElement {tooltip=StarterPresets.IsStarter(asset)?"Duplicate this starter to edit an independent copy.":"Shared asset: edits are saved immediately and affect every use. Discarding piece edits does not revert these values."};parent.Add(fields);
+            fields.SetEnabled(!StarterPresets.IsStarter(asset));
             Foldout extra=null;
             for(int i=0;i<names.Length;i++)
             {
-                string name=names[i];var property=new PropertyField(serialized.FindProperty(name),name=="density"?"Density (kg/m\u00b2)":null) {name="physics-"+name};
-                if(i<2)fields.Add(property);
+                string name=names[i];string label=name=="density"?"Density (kg/m\u00b2)":name=="radius"?"Max radius (m)":
+                    name=="impulseScale"?"Blast push":name=="impulseSpeed"?"Added speed (m/s)":null;
+                var property=new PropertyField(serialized.FindProperty(name),label) {name="physics-"+name};
+                if(i<2||asset is ExplosionPreset)fields.Add(property);
                 else {if(extra==null){extra=new Foldout {text="More physics",value=false};fields.Add(extra);}extra.Add(property);}
             }
             fields.Bind(serialized);fields.RegisterCallback<SerializedPropertyChangeEvent>(_=>{EditorUtility.SetDirty(asset);AssetDatabase.SaveAssetIfDirty(asset);previewDirty=true;UpdateValidation();RefreshActions();});
@@ -222,8 +244,8 @@ namespace BOM.Editor
         private void RestoreSelections(PieceDraft proposed)
         {
             T Last<T>(string key) where T:UnityEngine.Object => AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(EditorPrefs.GetString(PreferenceRoot+key,"")));
-            if(proposed.material==null)proposed.material=Last<MaterialDefinition>("Material");
-            if(proposed.destruction.response==null)proposed.destruction.response=Last<DestructionResponse>("Response");
+            if(proposed.material==null)proposed.material=Last<MaterialDefinition>("Material")??StarterPresets.Get<MaterialDefinition>("Default");
+            if(proposed.destruction.response==null)proposed.destruction.response=Last<DestructionResponse>("Response")??StarterPresets.Get<DestructionResponse>("Standard");
         }
         private void SaveAndPlace()
         {

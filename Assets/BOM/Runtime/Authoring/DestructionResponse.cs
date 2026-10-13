@@ -5,7 +5,7 @@ namespace BOM
     [CreateAssetMenu(menuName = "BOM/Destruction response")]
     public sealed class DestructionResponse : ScriptableObject
     {
-        [Tooltip("Velocity added to surviving material per unit of the shared test preset's impulse speed.")]
+        [Tooltip("Added blast speed multiplier. 0 disables push; 1 uses the preset speed. Density affects mass, not this added speed.")]
         [Min(0)] public float impulseScale = 1;
         public bool TryValidate(out string error)
         {

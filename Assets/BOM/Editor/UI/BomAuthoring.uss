@@ -29,6 +29,8 @@
 .bom-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 3px; }
 .bom-row > .bom-flex { flex-grow: 1; }
 .bom-row > Button { margin-right: 4px; margin-bottom: 4px; }
+.bom-row > ToolbarMenu { margin-right: 4px; margin-bottom: 4px; }
+.bom-asset-note { align-self: center; margin-left: 4px; font-size: 11px; }
 .bom-profile-editor { height: 340px; flex-shrink: 0; margin-bottom: 8px; background-color: #17202a; overflow: hidden; border-width: 1px; border-color: #738995; }
 .bom-profile-editor:focus { border-color: #5fe5ef; }
 .bom-profile-editor.dragging { border-color: #ffffff; }
