@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 979d8cf323dfedc45b453fd877d7f3fa, type: 3}
+  m_Name: Plate_2x1
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PieceDefinition
+  approved:
+    import:
+      sourceGuid: 
+      sourcePath: 
+      sourceHash: 
+      plane: 0
+      orientation: {x: 0, y: 0, z: 0}
+      scale: 1
+      origin: {x: 0, y: 0}
+      manuallyCorrected: 0
+    profile:
+      outer:
+        points:
+        - {x: 0, y: 0}
+        - {x: 2, y: 0}
+        - {x: 2, y: 1}
+        - {x: 0, y: 1}
+        cutEdges: 00000000y
+      holes: []
+    disconnectedProposal: []
+    thickness: 0.25
+    appearance:
+      image: {fileID: 2800000, guid: 0c0b845b4d16c3747ada3e6559e4a3eb, type: 2}
+      approvedImagePng: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==
+      face: {r: 1, g: 1, b: 1, a: 1}
+      side: {r: 0.3, g: 0.4, b: 0.5, a: 1}
+      cut: {r: 1, g: 0.64, b: 0.26, a: 1}
+      u: {x: 0.4, y: 0}
+      v: {x: 0, y: 0.4}
+      offset: {x: 0, y: 0}
+      wrapMode: 0
+      filterMode: 1
+    material: {fileID: 11400000, guid: 17132523432853d4ca7200010d5a13d3, type: 2}
+    destruction:
+      mode: 1
+      response: {fileID: 11400000, guid: 1ae117a498c328f499611d960305776b, type: 2}
+      impulseMultiplier: 1
+    grabEligible: 1
+  approvedVersion: 1

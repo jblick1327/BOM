@@ -1,0 +1,499 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &670719670945186677
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8927940845437601742}
+  - component: {fileID: 8344282310544980010}
+  m_Layer: 0
+  m_Name: Bond Fixed support to Connected plate A
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8927940845437601742
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670719670945186677}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8344282310544980010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670719670945186677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bff4f677e6915ad4686f509b3c3a40e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.ConnectionAuthoring
+  a: {fileID: 5418169073006529982}
+  b: {fileID: 1911654427931515990}
+  a0: {x: 0.5, y: 0}
+  a1: {x: 0.5, y: 1}
+  b0: {x: 0, y: 0}
+  b1: {x: 0, y: 1}
+  strength: 10000
+  attachmentLoss: 0
+  minimumFraction: 0
+  referenceLength: 1
+  restTranslation: {x: 0.5, y: 0}
+  restAngle: 0
+--- !u!1 &1468209651787013649
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 46291613444047251}
+  - component: {fileID: 3610746194491441868}
+  m_Layer: 0
+  m_Name: Fixed floor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &46291613444047251
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1468209651787013649}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3610746194491441868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1468209651787013649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: ae7ba3298c190ee4893001265e2bc8ee, type: 2}
+  overrideMaterial: 0
+  overrideDestruction: 0
+  overrideGrab: 0
+  material: {fileID: 0}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0
+--- !u!1 &2065812454176481990
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9126315009599746556}
+  - component: {fileID: 1911654427931515990}
+  m_Layer: 0
+  m_Name: Connected plate A
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9126315009599746556
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065812454176481990}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.5, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1911654427931515990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2065812454176481990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: efb3cbfda22245d42ab9cce92fd87229, type: 2}
+  overrideMaterial: 0
+  overrideDestruction: 0
+  overrideGrab: 0
+  material: {fileID: 0}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0
+--- !u!1 &2391650760391852474
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5309454556777387526}
+  - component: {fileID: 4652541805560594790}
+  m_Layer: 0
+  m_Name: Connected plate B
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5309454556777387526
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391650760391852474}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.5, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4652541805560594790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2391650760391852474}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: 42a6cbba05e21594697a2321a6744c59, type: 2}
+  overrideMaterial: 1
+  overrideDestruction: 0
+  overrideGrab: 1
+  material: {fileID: 11400000, guid: 79cc0103fc69ade4e9c6faa8f8e8cdad, type: 2}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0
+--- !u!1 &3164127883650618492
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3280152537819660740}
+  - component: {fileID: 5418169073006529982}
+  m_Layer: 0
+  m_Name: Fixed support
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3280152537819660740
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3164127883650618492}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5418169073006529982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3164127883650618492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: b72ed8a01d8eb2d41b11405f3835080a, type: 2}
+  overrideMaterial: 0
+  overrideDestruction: 0
+  overrideGrab: 0
+  material: {fileID: 0}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0
+--- !u!1 &4001014462932179489
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7932785137920194636}
+  - component: {fileID: 2707460292862056075}
+  m_Layer: 0
+  m_Name: Frame with enclosed hole
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7932785137920194636
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4001014462932179489}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -5, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2707460292862056075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4001014462932179489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: 588a75c97362486478434582eb949329, type: 2}
+  overrideMaterial: 0
+  overrideDestruction: 0
+  overrideGrab: 0
+  material: {fileID: 0}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0
+--- !u!1 &5493715888193386356
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2975262004277317149}
+  - component: {fileID: 6844379480846829155}
+  m_Layer: 0
+  m_Name: ReferenceAssembly
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2975262004277317149
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5493715888193386356}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 46291613444047251}
+  - {fileID: 3280152537819660740}
+  - {fileID: 7932785137920194636}
+  - {fileID: 3827312832319238232}
+  - {fileID: 9126315009599746556}
+  - {fileID: 5309454556777387526}
+  - {fileID: 8927940845437601742}
+  - {fileID: 8240933858626326887}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6844379480846829155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5493715888193386356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69d81dc388ca6d643a7628d68ad42f21, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.LevelAuthoring
+  foundations:
+  - {fileID: 3610746194491441868}
+  - {fileID: 5418169073006529982}
+  testPresets:
+  - {fileID: 11400000, guid: 2f5456c462aadb94ab87749abc1a4605, type: 2}
+  - {fileID: 11400000, guid: 011625273d822c54988a652771f79e55, type: 2}
+  - {fileID: 11400000, guid: ece5b4bef51a74a43a5c10dda84b8812, type: 2}
+  gravity: {x: 0, y: -9.81}
+  startOnPlay: 1
+--- !u!1 &8746568539889994091
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8240933858626326887}
+  - component: {fileID: 8471183733039526962}
+  m_Layer: 0
+  m_Name: Bond Connected plate A to Connected plate B
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8240933858626326887
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8746568539889994091}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8471183733039526962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8746568539889994091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bff4f677e6915ad4686f509b3c3a40e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.ConnectionAuthoring
+  a: {fileID: 1911654427931515990}
+  b: {fileID: 4652541805560594790}
+  a0: {x: 3, y: 0}
+  a1: {x: 3, y: 1}
+  b0: {x: 0, y: 0}
+  b1: {x: 0, y: 1}
+  strength: 10000
+  attachmentLoss: 0
+  minimumFraction: 0
+  referenceLength: 1
+  restTranslation: {x: 3, y: 0}
+  restAngle: 0
+--- !u!1 &9086934687046887459
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3827312832319238232}
+  - component: {fileID: 1307869765266326792}
+  m_Layer: 0
+  m_Name: Concave L
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3827312832319238232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9086934687046887459}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3, y: -2.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2975262004277317149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1307869765266326792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9086934687046887459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3acb9846de67ae948b02ca0192c6f24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PiecePlacement
+  piece: {fileID: 11400000, guid: a25b43d4d9ad1064aa54707382ec3172, type: 2}
+  overrideMaterial: 0
+  overrideDestruction: 0
+  overrideGrab: 0
+  material: {fileID: 0}
+  destruction:
+    mode: 1
+    response: {fileID: 0}
+    impulseMultiplier: 1
+  grabEligible: 0

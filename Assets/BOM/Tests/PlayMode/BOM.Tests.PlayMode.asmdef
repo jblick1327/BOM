@@ -1,0 +1,1 @@
+{"name":"BOM.Tests.PlayMode","references":["BOM.Runtime","BOM.Editor","BOM.Tests.Shared"],"optionalUnityReferences":["TestAssemblies"],"autoReferenced":false}

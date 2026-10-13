@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 979d8cf323dfedc45b453fd877d7f3fa, type: 3}
+  m_Name: ImportedMultiMeshFrame
+  m_EditorClassIdentifier: BOM.Runtime::BOM.PieceDefinition
+  approved:
+    import:
+      sourceGuid: 3f672d4e0f21d644ba3034fb294b2c7f
+      sourcePath: Assets/BOM/Fixtures/Source/MultiMeshFrame.fbx
+      sourceHash: 9491a78bf6b785e4cf52143b5e1f2808
+      plane: 0
+      orientation: {x: 0, y: 0, z: 0}
+      scale: 1
+      origin: {x: 0, y: 0}
+      manuallyCorrected: 1
+    profile:
+      outer:
+        points:
+        - {x: 1.51, y: 0.5}
+        - {x: 1.5, y: 1.5}
+        - {x: -1.5, y: 1.5}
+        - {x: -1.5, y: 0.5}
+        - {x: -1.5, y: -1.5}
+        - {x: -0.5, y: -1.5}
+        - {x: 1.5, y: -1.5}
+        - {x: 1.5, y: -0.5}
+        cutEdges: 0000000000000000y
+      holes:
+      - points:
+        - {x: -0.5, y: -0.5}
+        - {x: -0.5, y: 0.5}
+        - {x: 0.5, y: 0.5}
+        - {x: 0.5, y: -0.5}
+        cutEdges: 00000000y
+    disconnectedProposal: []
+    thickness: 0.05
+    appearance:
+      image: {fileID: 2800000, guid: 0c0b845b4d16c3747ada3e6559e4a3eb, type: 2}
+      approvedImagePng: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==
+      face: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+      side: {r: 0.36, g: 0.3, b: 0.2, a: 1}
+      cut: {r: 0.85, g: 0.75, b: 0.54, a: 1}
+      u: {x: 0.33333334, y: 0}
+      v: {x: 0, y: 0.33333334}
+      offset: {x: 0.5, y: 0.5}
+      wrapMode: 0
+      filterMode: 1
+    material: {fileID: 11400000, guid: 17132523432853d4ca7200010d5a13d3, type: 2}
+    destruction:
+      mode: 1
+      response: {fileID: 11400000, guid: 1ae117a498c328f499611d960305776b, type: 2}
+      impulseMultiplier: 1
+    grabEligible: 1
+  approvedVersion: 1

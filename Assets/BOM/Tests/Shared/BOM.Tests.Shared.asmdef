@@ -1,0 +1,1 @@
+{"name":"BOM.Tests.Shared","rootNamespace":"BOM.Tests","references":["BOM.Runtime","BOM.Editor"],"includePlatforms":["Editor"],"autoReferenced":false}

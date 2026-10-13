@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89880929ad31b5341acfe7ed953ac719, type: 3}
+  m_Name: Test_SmallBite
+  m_EditorClassIdentifier: BOM.Runtime::BOM.ExplosionPreset
+  radius: 0.8
+  reachBudget: 2
+  impulseSpeed: 0.3

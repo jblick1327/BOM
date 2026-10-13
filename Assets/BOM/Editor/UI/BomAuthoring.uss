@@ -1,0 +1,22 @@
+.bom-root { flex-grow: 1; padding: 12px; }
+.bom-title { font-size: 21px; -unity-font-style: bold; margin-bottom: 4px; }
+.bom-description { white-space: normal; margin-bottom: 12px; }
+.bom-toolbar { flex-direction: row; margin-bottom: 10px; }
+.bom-toolbar > Button { flex-grow: 1; margin-right: 4px; padding: 7px; }
+.bom-toolbar > .bom-tab-active { background-color: #176b83; -unity-font-style: bold; }
+.bom-content { flex-grow: 1; }
+.bom-section { margin-bottom: 10px; padding: 9px; border-width: 1px; border-color: #555; border-radius: 4px; }
+.bom-section-title { -unity-font-style: bold; font-size: 14px; margin-bottom: 8px; }
+.bom-source { margin-bottom: 10px; padding: 8px; border-width: 1px; border-color: #555; border-radius: 4px; }
+.bom-row { flex-direction: row; flex-wrap: wrap; margin-bottom: 3px; }
+.bom-row > .bom-flex { flex-grow: 1; }
+.bom-row > Button { margin-right: 4px; margin-bottom: 4px; }
+.bom-profile-editor { height: 340px; flex-shrink: 0; margin-bottom: 8px; background-color: #17202a; overflow: hidden; border-width: 1px; border-color: #738995; }
+.bom-profile-editor:focus { border-color: #5fe5ef; }
+.bom-profile-editor.dragging { border-color: #ffffff; }
+.bom-preview { height: 310px; flex-shrink: 0; margin-bottom: 8px; background-color: #17202a; }
+.bom-report { white-space: normal; margin-top: 8px; }
+.bom-help { white-space: normal; color: #b8ccd7; margin-bottom: 8px; }
+.bom-primary { background-color: #176b83; padding: 8px; margin-top: 6px; }
+.bom-error { color: #ff9d81; white-space: normal; margin-bottom: 4px; }
+.bom-snapshot { min-height: 140px; }

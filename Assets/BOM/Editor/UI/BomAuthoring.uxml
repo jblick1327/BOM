@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <ui:Style src="BomAuthoring.uss" />
+  <ui:VisualElement class="bom-root">
+    <ui:Label text="BOM authoring" class="bom-title" />
+    <ui:Label text="Choose a model → drag its outline points → approve → place and connect → playtest. Draft edits never change an approved piece until approval." class="bom-description" />
+    <ui:VisualElement name="toolbar" class="bom-toolbar" />
+    <ui:ScrollView name="content" class="bom-content" />
+    <ui:Label name="status" class="bom-report" />
+  </ui:VisualElement>
+</ui:UXML>

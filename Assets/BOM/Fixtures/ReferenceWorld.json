@@ -1,0 +1,699 @@
+{
+    "schemaVersion": 1,
+    "match": "cb94bd2e0d024633aa217701156231d9",
+    "nextSequence": 9,
+    "captureNumber": 0,
+    "definitions": {
+        "materials": [
+            {
+                "id": "c4990e076377bb458ff7939b76fe93b373aa015d140dac5d62bc9b65d3fc702c",
+                "label": "Material_Density4_Resistance2",
+                "density": 4.0,
+                "blastResistance": 2.0,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "linearDamping": 0.10000000149011612,
+                "angularDamping": 0.10000000149011612
+            },
+            {
+                "id": "56b7277cbb4a57b1ad70dd727f9f388ec1bb95160bdd8a9c9d6154a27c957208",
+                "label": "Material_Density2_Resistance05",
+                "density": 2.0,
+                "blastResistance": 0.5,
+                "friction": 0.5,
+                "restitution": 0.0,
+                "linearDamping": 0.0,
+                "angularDamping": 0.0
+            }
+        ],
+        "responses": [
+            {
+                "id": "5e841ef23474f654c1b14329278e4c34b16d8a11b48eb4d803dff959b2c8f595",
+                "label": "RayCostSubtraction",
+                "impulseScale": 1.0
+            }
+        ],
+        "appearances": [
+            {
+                "id": "967046af95a4035e9fcbb29bcd06a583d20220c9320a4cb4fb82716f15ca71bd",
+                "label": "FoundationFloor v1",
+                "face": {
+                    "r": 0.2199999988079071,
+                    "g": 0.30000001192092896,
+                    "b": 0.4000000059604645,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "",
+                "wrapMode": 0,
+                "filterMode": 1
+            },
+            {
+                "id": "559d79acac372c5d5108e68de86ed05982ac66b933162db8d1e74c786e0f7792",
+                "label": "FixedSupport v1",
+                "face": {
+                    "r": 0.2199999988079071,
+                    "g": 0.30000001192092896,
+                    "b": 0.4000000059604645,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "",
+                "wrapMode": 0,
+                "filterMode": 1
+            },
+            {
+                "id": "d8d6116f51ba991ae52039b8bdf01f9aa6622b8cc6bc6d8f8c529c17223773b7",
+                "label": "Frame_3x3_Hole1x1 v1",
+                "face": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==",
+                "wrapMode": 0,
+                "filterMode": 1
+            },
+            {
+                "id": "28372cf481d49c805b195abec38b65aae8062b292282453e79b9b44d0d042687",
+                "label": "Concave_L v1",
+                "face": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==",
+                "wrapMode": 0,
+                "filterMode": 1
+            },
+            {
+                "id": "fdc2b594d4996e4ee14ba644f8c1c05d419d02d1c3bcf135373bb1f1c4a7eba0",
+                "label": "Plate_3x1 v1",
+                "face": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==",
+                "wrapMode": 0,
+                "filterMode": 1
+            },
+            {
+                "id": "c4ff85495c93e9cd22ebc733ed4f367eb7094f617bb924cb04e8164f7c2a1623",
+                "label": "Plate_2x1 v1",
+                "face": {
+                    "r": 1.0,
+                    "g": 1.0,
+                    "b": 1.0,
+                    "a": 1.0
+                },
+                "side": {
+                    "r": 0.30000001192092896,
+                    "g": 0.4000000059604645,
+                    "b": 0.5,
+                    "a": 1.0
+                },
+                "cut": {
+                    "r": 1.0,
+                    "g": 0.6399999856948853,
+                    "b": 0.25999999046325684,
+                    "a": 1.0
+                },
+                "imagePng": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQElEQVQ4EWO0qFr4nwEJLC6OROIxMMT2Lkfho8szociSwRl4Axhvv/2FEgaE/IwuP/BeoNgFjKPpgGE0HTAwAACzFB5DjgWejwAAAABJRU5ErkJggg==",
+                "wrapMode": 0,
+                "filterMode": 1
+            }
+        ]
+    },
+    "configuration": {
+        "gravity": {
+            "x": 0.0,
+            "y": -9.8100004196167
+        },
+        "fixedStep": 0.019999999552965164,
+        "foundations": [
+            "cb94bd2e0d024633aa217701156231d9:piece:1",
+            "cb94bd2e0d024633aa217701156231d9:piece:2"
+        ],
+        "testPresets": [
+            {
+                "label": "Test_SmallBite",
+                "radius": 0.800000011920929,
+                "reachBudget": 2.0,
+                "impulseSpeed": 0.30000001192092896
+            },
+            {
+                "label": "Test_Split",
+                "radius": 1.2000000476837158,
+                "reachBudget": 5.0,
+                "impulseSpeed": 1.0
+            },
+            {
+                "label": "Test_Removal",
+                "radius": 5.0,
+                "reachBudget": 20.0,
+                "impulseSpeed": 0.0
+            }
+        ]
+    },
+    "bodies": [
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:1",
+            "label": "Fixed floor",
+            "material": "c4990e076377bb458ff7939b76fe93b373aa015d140dac5d62bc9b65d3fc702c",
+            "response": "",
+            "appearance": "967046af95a4035e9fcbb29bcd06a583d20220c9320a4cb4fb82716f15ca71bd",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": -8.0,
+                            "y": -1.0
+                        },
+                        {
+                            "x": 8.0,
+                            "y": -1.0
+                        },
+                        {
+                            "x": 8.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": -8.0,
+                            "y": 0.0
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": []
+            },
+            "position": {
+                "x": 0.0,
+                "y": -3.0
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 0,
+            "grabEligible": true,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:2",
+            "label": "Fixed support",
+            "material": "c4990e076377bb458ff7939b76fe93b373aa015d140dac5d62bc9b65d3fc702c",
+            "response": "",
+            "appearance": "559d79acac372c5d5108e68de86ed05982ac66b933162db8d1e74c786e0f7792",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": -0.5,
+                            "y": -3.0
+                        },
+                        {
+                            "x": 0.5,
+                            "y": -3.0
+                        },
+                        {
+                            "x": 0.5,
+                            "y": 1.0
+                        },
+                        {
+                            "x": -0.5,
+                            "y": 1.0
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": []
+            },
+            "position": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 0,
+            "grabEligible": true,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:3",
+            "label": "Frame with enclosed hole",
+            "material": "56b7277cbb4a57b1ad70dd727f9f388ec1bb95160bdd8a9c9d6154a27c957208",
+            "response": "5e841ef23474f654c1b14329278e4c34b16d8a11b48eb4d803dff959b2c8f595",
+            "appearance": "d8d6116f51ba991ae52039b8bdf01f9aa6622b8cc6bc6d8f8c529c17223773b7",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": -1.5,
+                            "y": -1.5
+                        },
+                        {
+                            "x": 1.5,
+                            "y": -1.5
+                        },
+                        {
+                            "x": 1.5,
+                            "y": 1.5
+                        },
+                        {
+                            "x": -1.5,
+                            "y": 1.5
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": [
+                    {
+                        "points": [
+                            {
+                                "x": -0.5,
+                                "y": 0.5
+                            },
+                            {
+                                "x": 0.5,
+                                "y": 0.5
+                            },
+                            {
+                                "x": 0.5,
+                                "y": -0.5
+                            },
+                            {
+                                "x": -0.5,
+                                "y": -0.5
+                            }
+                        ],
+                        "cutEdges": [
+                            false,
+                            false,
+                            false,
+                            false
+                        ]
+                    }
+                ]
+            },
+            "position": {
+                "x": -5.0,
+                "y": 0.0
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 1,
+            "grabEligible": true,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:4",
+            "label": "Concave L",
+            "material": "56b7277cbb4a57b1ad70dd727f9f388ec1bb95160bdd8a9c9d6154a27c957208",
+            "response": "5e841ef23474f654c1b14329278e4c34b16d8a11b48eb4d803dff959b2c8f595",
+            "appearance": "28372cf481d49c805b195abec38b65aae8062b292282453e79b9b44d0d042687",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 2.5,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 2.5,
+                            "y": 0.699999988079071
+                        },
+                        {
+                            "x": 0.699999988079071,
+                            "y": 0.699999988079071
+                        },
+                        {
+                            "x": 0.699999988079071,
+                            "y": 2.5
+                        },
+                        {
+                            "x": 0.0,
+                            "y": 2.5
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": []
+            },
+            "position": {
+                "x": 3.0,
+                "y": -2.5
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 1,
+            "grabEligible": true,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:5",
+            "label": "Connected plate A",
+            "material": "56b7277cbb4a57b1ad70dd727f9f388ec1bb95160bdd8a9c9d6154a27c957208",
+            "response": "5e841ef23474f654c1b14329278e4c34b16d8a11b48eb4d803dff959b2c8f595",
+            "appearance": "fdc2b594d4996e4ee14ba644f8c1c05d419d02d1c3bcf135373bb1f1c4a7eba0",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 3.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 3.0,
+                            "y": 1.0
+                        },
+                        {
+                            "x": 0.0,
+                            "y": 1.0
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": []
+            },
+            "position": {
+                "x": 0.5,
+                "y": 0.0
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 1,
+            "grabEligible": true,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:piece:6",
+            "label": "Connected plate B",
+            "material": "c4990e076377bb458ff7939b76fe93b373aa015d140dac5d62bc9b65d3fc702c",
+            "response": "5e841ef23474f654c1b14329278e4c34b16d8a11b48eb4d803dff959b2c8f595",
+            "appearance": "c4ff85495c93e9cd22ebc733ed4f367eb7094f617bb924cb04e8164f7c2a1623",
+            "geometryRevision": 1,
+            "region": {
+                "outer": {
+                    "points": [
+                        {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 2.0,
+                            "y": 0.0
+                        },
+                        {
+                            "x": 2.0,
+                            "y": 1.0
+                        },
+                        {
+                            "x": 0.0,
+                            "y": 1.0
+                        }
+                    ],
+                    "cutEdges": [
+                        false,
+                        false,
+                        false,
+                        false
+                    ]
+                },
+                "holes": []
+            },
+            "position": {
+                "x": 3.5,
+                "y": 0.0
+            },
+            "velocity": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "angle": 0.0,
+            "angularVelocity": 0.0,
+            "thickness": 0.25,
+            "impulseMultiplier": 1.0,
+            "destruction": 1,
+            "grabEligible": false,
+            "uvU": {
+                "x": 0.4000000059604645,
+                "y": 0.0
+            },
+            "uvV": {
+                "x": 0.0,
+                "y": 0.4000000059604645
+            },
+            "uvOffset": {
+                "x": 0.0,
+                "y": 0.0
+            }
+        }
+    ],
+    "bonds": [
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:bond:7",
+            "a": "cb94bd2e0d024633aa217701156231d9:piece:2",
+            "b": "cb94bd2e0d024633aa217701156231d9:piece:5",
+            "a0": {
+                "x": 0.5,
+                "y": 0.0
+            },
+            "a1": {
+                "x": 0.5,
+                "y": 1.0
+            },
+            "b0": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "b1": {
+                "x": 0.0,
+                "y": 1.0
+            },
+            "restTranslation": {
+                "x": 0.5,
+                "y": 0.0
+            },
+            "restAngle": 0.0,
+            "strength": 10000.0,
+            "referenceLength": 1.0,
+            "minimumFraction": 0.0,
+            "attachmentLoss": false
+        },
+        {
+            "id": "cb94bd2e0d024633aa217701156231d9:bond:8",
+            "a": "cb94bd2e0d024633aa217701156231d9:piece:5",
+            "b": "cb94bd2e0d024633aa217701156231d9:piece:6",
+            "a0": {
+                "x": 3.0,
+                "y": 0.0
+            },
+            "a1": {
+                "x": 3.0,
+                "y": 1.0
+            },
+            "b0": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "b1": {
+                "x": 0.0,
+                "y": 1.0
+            },
+            "restTranslation": {
+                "x": 3.0,
+                "y": 0.0
+            },
+            "restAngle": 0.0,
+            "strength": 10000.0,
+            "referenceLength": 1.0,
+            "minimumFraction": 0.0,
+            "attachmentLoss": false
+        }
+    ]
+}
