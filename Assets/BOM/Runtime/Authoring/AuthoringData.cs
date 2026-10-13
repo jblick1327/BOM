@@ -34,6 +34,7 @@ namespace BOM
         public ProjectionPlane plane;
         public Vector3 orientation;
         public float scale = 1;
+        public Vector2 projectedScale = Vector2.one;
         public Vector2 origin;
         public bool manuallyCorrected;
         public ImportSettings Clone() => (ImportSettings)MemberwiseClone();
@@ -108,7 +109,8 @@ namespace BOM
             if (draft.material == null) report.Add(target, "Material", "A gameplay material is required.", "Select a material definition.");
             else if (!draft.material.TryValidate(out error)) report.Add(draft.material, "Material", error, "Correct density, resistance or physical settings.");
             ValidateDestruction(draft.destruction, target, report);
-            if (draft.import == null || !Geometry.Positive(draft.import.scale) || !Geometry.Finite(draft.import.origin)
+            if (draft.import == null || !Geometry.Positive(draft.import.scale) || !Geometry.Finite(draft.import.projectedScale)
+                || !Geometry.Positive(draft.import.projectedScale.x) || !Geometry.Positive(draft.import.projectedScale.y) || !Geometry.Finite(draft.import.origin)
                 || !Geometry.Finite(draft.import.orientation) || !Enum.IsDefined(typeof(ProjectionPlane), draft.import.plane))
                 report.Add(target, "Import transform", "Invalid projection, orientation, scale or origin.", "Use finite values and a positive source scale.");
             var a = draft.appearance;

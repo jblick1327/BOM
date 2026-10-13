@@ -11,6 +11,9 @@ namespace BOM.Editor
         private readonly Action beforeEdit, changed;
         private Vector2 centre;
         private float pixelsPerMetre = 100;
+        private readonly Label scaleBar;
+        private string geometryError;
+        public int SelectedRegion { get; private set; }
         public int SelectedRing { get; private set; }
         public int SelectedVertex { get; private set; } = -1;
         public bool Snap { get; set; }
@@ -32,6 +35,8 @@ namespace BOM.Editor
             generateVisualContent += Draw;
             RegisterCallback<GeometryChangedEvent>(_ => Fit());
             this.AddManipulator(new PointManipulator(this));
+            scaleBar=new Label {pickingMode=PickingMode.Ignore};scaleBar.AddToClassList("bom-scale-bar");Add(scaleBar);
+            schedule.Execute(()=>scaleBar.text=$"{ScaleStep():G3} m").Every(100);
         }
 
         public Vector2 ProfileToCanvas(Vector2 point) => contentRect.center + new Vector2(point.x - centre.x, centre.y - point.y) * pixelsPerMetre;
@@ -50,6 +55,24 @@ namespace BOM.Editor
         }
         public void SelectRing(int ring)
         {SelectedRing = Mathf.Clamp(ring, 0, draft.profile.holes.Count); SelectedVertex = -1; SelectionChanged?.Invoke(); MarkDirtyRepaint();}
+        public void SetGeometryError(string error){geometryError=error;MarkDirtyRepaint();}
+        public void SelectProfilePoint(Vector2 point,float radius)
+        {
+            float best=radius*radius;int selectedRing=-1,selectedVertex=-1,r=0;
+            foreach(var contour in draft.profile.Contours)
+            {
+                for(int i=0;i<contour.points.Count;i++){float d=(contour.points[i]-point).sqrMagnitude;if(d<best){best=d;selectedRing=r;selectedVertex=i;}}
+                r++;
+            }
+            if(selectedRing>=0){SelectedRegion=0;SelectedRing=selectedRing;SelectedVertex=selectedVertex;}
+            else
+            {
+                SelectedVertex=-1;
+                for(int i=0;i<draft.disconnectedProposal.Count;i++)if(Geometry.Contains(draft.disconnectedProposal[i],point)){SelectedRegion=i+1;SelectionChanged?.Invoke();MarkDirtyRepaint();return;}
+                if(Geometry.Contains(draft.profile,point))SelectedRegion=0;
+            }
+            SelectionChanged?.Invoke();MarkDirtyRepaint();
+        }
         public void RefreshSelection()
         {
             int ring=Mathf.Clamp(SelectedRing,0,draft.profile.holes.Count);
@@ -89,8 +112,8 @@ namespace BOM.Editor
                 {float d = (ProfileToCanvas(contour.points[i]) - pixel).sqrMagnitude; if (d < distance) {distance = d; ring = r; vertex = i;}}
                 r++;
             }
-            if (ring < 0) {SelectedVertex=-1;SelectionChanged?.Invoke();MarkDirtyRepaint();return false;}
-            SelectedRing = ring; SelectedVertex = vertex; SelectionChanged?.Invoke(); MarkDirtyRepaint(); return true;
+            if (ring < 0) {SelectProfilePoint(CanvasToProfile(pixel),12/pixelsPerMetre);return false;}
+            SelectedRegion=0;SelectedRing = ring; SelectedVertex = vertex; SelectionChanged?.Invoke(); MarkDirtyRepaint(); return true;
         }
         private bool Insert(Vector2 pixel)
         {
@@ -109,8 +132,7 @@ namespace BOM.Editor
         {
             if (contentRect.width < 1 || contentRect.height < 1) return;
             var p = context.painter2D;
-            double step = Math.Pow(10, Math.Floor(Math.Log10(60 / pixelsPerMetre)));
-            if (step * pixelsPerMetre < 30) step *= 5;
+            double step = ScaleStep();
             var min = CanvasToProfile(new Vector2(contentRect.xMin, contentRect.yMax));
             var max = CanvasToProfile(new Vector2(contentRect.xMax, contentRect.yMin));
             p.lineWidth = 1; p.strokeColor = new Color(.22f, .29f, .34f); p.BeginPath();
@@ -119,6 +141,8 @@ namespace BOM.Editor
             for (double y = Math.Ceiling(min.y / step) * step; y <= max.y; y += step)
             {p.MoveTo(ProfileToCanvas(new Vector2(min.x, (float)y))); p.LineTo(ProfileToCanvas(new Vector2(max.x, (float)y)));}
             p.Stroke();
+            float bar=(float)step*pixelsPerMetre;
+            p.strokeColor=Color.white;p.lineWidth=2;p.BeginPath();p.MoveTo(new Vector2(12,contentRect.height-24));p.LineTo(new Vector2(12+bar,contentRect.height-24));p.Stroke();
             void Trace(Contour contour)
             {
                 if (contour.points.Count == 0 || contour.points.Any(point=>!Geometry.Finite(point))) return;
@@ -132,6 +156,7 @@ namespace BOM.Editor
             {
                 p.lineWidth = ring == SelectedRing ? 3 : 2; p.strokeColor = ring == 0 ? Color.cyan : new Color(1, .7f, .25f);
                 p.BeginPath(); Trace(contour); p.Stroke();
+                if(!string.IsNullOrEmpty(geometryError)){p.strokeColor=new Color(1,.3f,.25f);p.lineWidth=3;p.BeginPath();Trace(contour);p.Stroke();}
                 for (int i = 0; i < contour.points.Count; i++)
                 {
                     if(!Geometry.Finite(contour.points[i]))continue;
@@ -141,9 +166,12 @@ namespace BOM.Editor
                 ring++;
             }
             p.strokeColor = new Color(1, .45f, .35f); p.lineWidth = 2;
-            foreach (var region in draft.disconnectedProposal) foreach (var contour in region.Contours)
-            {p.BeginPath(); Trace(contour); p.Stroke();}
+            for(int i=0;i<draft.disconnectedProposal.Count;i++)foreach(var contour in draft.disconnectedProposal[i].Contours)
+            {p.lineWidth=SelectedRegion==i+1?4:2;p.strokeColor=SelectedRegion==i+1?Color.white:new Color(1,.45f,.35f);p.BeginPath();Trace(contour);p.Stroke();}
         }
+
+        private double ScaleStep()
+        {double step=Math.Pow(10,Math.Floor(Math.Log10(60/pixelsPerMetre)));return step*pixelsPerMetre<30?step*5:step;}
 
         private sealed class PointManipulator : PointerManipulator
         {

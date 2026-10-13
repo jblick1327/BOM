@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace BOM.Editor
 {
-    public sealed class BomAuthoringWindow : EditorWindow
+    public sealed partial class BomAuthoringWindow : EditorWindow
     {
         [Flags] private enum AppearanceEdits {None=0,Face=1,Side=2,Cut=4,Image=8,U=16,V=32,Offset=64,Wrap=128,Filter=256,Thickness=512}
         [SerializeField] private int tab;
@@ -43,12 +43,9 @@ namespace BOM.Editor
         private bool windowEnabled,previewUpdating;
         private readonly System.Collections.Generic.List<(Button button, Func<bool> available)> actions = new System.Collections.Generic.List<(Button, Func<bool>)>();
         private PreviewRenderUtility preview;
-        private GameObject previewObject;
-        private readonly System.Collections.Generic.List<UnityEngine.Object> previewAssets=new System.Collections.Generic.List<UnityEngine.Object>();
         private bool previewDirty=true;
         private double nextPreview;
         private double nextControls;
-        private float previewTilt=18;
 
         [MenuItem("BOM/Authoring workspace")]
         public static BomAuthoringWindow Open() => GetWindow<BomAuthoringWindow>("BOM authoring");
@@ -68,25 +65,26 @@ namespace BOM.Editor
         private void OnDisable()
         {
             windowEnabled=false;EditorApplication.update-=Tick;SceneView.duringSceneGui-=SceneGUI;Undo.undoRedoPerformed-=UndoDraft;EditorApplication.playModeStateChanged-=PlayModeChanged;
-            var ownedPreview=preview;preview=null;try{ClearPreview();}finally{ownedPreview?.Cleanup();}
+            ClearPlacementPreview();var ownedPreview=modelPreview;modelPreview=null;preview=null;ownedPreview?.Dispose();
         }
         private void UndoDraft() {previewDirty=true;Build();}
-        private void PlayModeChanged(PlayModeStateChange _) {Build();}
+        private void PlayModeChanged(PlayModeStateChange _) {ClearPlacementPreview();Build();}
         public override void SaveChanges()
-        {if(!Approve())throw new InvalidOperationException("The piece draft was not saved. Keep the workspace open, correct the listed issues, and approve it; or explicitly discard the draft.");base.SaveChanges();}
+        {if(!Approve())throw new InvalidOperationException("The piece draft was not saved. Correct the highlighted fields and save, or discard the edits.");base.SaveChanges();}
         public override void DiscardChanges()
         {draft=editing!=null?editing.Draft():null;conversionDirty=false;draftEdited=false;appearanceProposed=editing!=null;appearanceEdits=AppearanceEdits.None;previewDirty=true;base.DiscardChanges();Build();}
         private void BeginDraftEdit() {Undo.RegisterCompleteObjectUndo(this,"Edit BOM pending draft");}
         private bool AllowDiscardDraft() => !draftEdited || EditorUtility.DisplayDialog("Unsaved piece draft","Discard the pending edits? The approved piece will not change.","Discard draft","Keep editing");
         public void CreateGUI()
         {
-            titleContent=new GUIContent("BOM authoring");minSize=new Vector2(560,500);rootVisualElement.Clear();
+            titleContent=new GUIContent("BOM authoring");minSize=new Vector2(560,700);rootVisualElement.Clear();
             var tree=AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/BOM/Editor/UI/BomAuthoring.uxml");
             if(tree==null) {rootVisualElement.Add(new Label("Restore the BOM authoring UXML asset."));return;}
             tree.CloneTree(rootVisualElement);content=rootVisualElement.Q<ScrollView>("content");status=rootVisualElement.Q<Label>("status");
+            rootVisualElement.RegisterCallback<GeometryChangedEvent>(e=>rootVisualElement.Q<VisualElement>("workbench")?.EnableInClassList("bom-narrow",e.newRect.width<900));
             var toolbar=rootVisualElement.Q<VisualElement>("toolbar");
-            string[] names={"Import / review","Place","Connect","Playtest"};
-            for(int i=0;i<names.Length;i++) {int selected=i;var button=new Button(()=>{tab=selected;Build();}) {text=(i+1)+". "+names[i],name="step"+i};toolbar.Add(button);}
+            string[] names={"Import","Place","Connect","Playtest"};
+            for(int i=0;i<names.Length;i++) {int selected=i;var button=new Button(()=>{ClearPlacementPreview();tab=selected;Build();}) {text=names[i],name="step"+i};toolbar.Add(button);}
             Build();
         }
         private VisualElement Section(string title)
@@ -113,94 +111,20 @@ namespace BOM.Editor
         private void Build()
         {
             if(content==null) return;actions.Clear();coordinateActions.Clear();coordinateFields.Clear();contourCoordinates=null;coordinateProfile=null;coordinatePointCounts=Array.Empty<int>();content.Clear();image=null;validation=null;profileEditor=null;approveButton=null;continueButton=null;refreshButton=null;
-            hasUnsavedChanges=draftEdited;saveChangesMessage="This piece has a pending draft. Save approves a valid piece; Discard keeps the last approved version. Cancel keeps editing.";
+            widthField=null;heightField=null;dimensionsLabel=null;draftState=null;
+            rootVisualElement.Q<VisualElement>("visuals")?.Clear();rootVisualElement.Q<VisualElement>("footer")?.Clear();
+            rootVisualElement.Q<VisualElement>("visuals")?.EnableInClassList("bom-hidden",tab!=0||draft==null);
+            rootVisualElement.Q<VisualElement>("footer")?.EnableInClassList("bom-hidden",tab!=0||draft==null);
+            rootVisualElement.Q<VisualElement>("visuals")?.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            rootVisualElement.Q<VisualElement>("footer")?.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode);
+            hasUnsavedChanges=draftEdited;saveChangesMessage="Save this piece or discard the pending edits.";
             for(int i=0;i<4;i++) rootVisualElement.Q<Button>("step"+i)?.EnableInClassList("bom-tab-active",tab==i);
             if(tab==0) ImportUI();else if(tab==1) PlacementUI();else if(tab==2) ConnectionUI();else TestUI();
             content.SetEnabled(tab==3||!EditorApplication.isPlayingOrWillChangePlaymode);
-            if(tab!=3&&EditorApplication.isPlayingOrWillChangePlaymode)Message("Stop Play mode to edit authoring inputs. Use Playtest for explosions, reset and capture.");
+            if(tab!=3&&EditorApplication.isPlayingOrWillChangePlaymode)Message("Stop Play mode to edit.");
             RefreshActions();
         }
-        private void ImportUI()
-        {
-            var inputs=new Foldout {text="1. Model: "+(editing!=null?editing.name:source!=null?source.name:"choose an FBX"),value=draft==null||draft.profile.outer.points.Count<3};inputs.AddToClassList("bom-source");content.Add(inputs);
-            Help(inputs,"Import your Blender-exported FBX into Unity's Project window first, then drag that imported model into Model below. Its outline is proposed automatically. Existing pieces stay unchanged until approval.");
-            ObjectField<GameObject>(inputs,"Model (FBX)",source,SelectSource);
-            ObjectField<PieceDefinition>(inputs,"Review existing piece",editing,value=>
-            {if(!AllowDiscardDraft()){Build();return;}editing=value;draft=value!=null?value.Draft():null;source=value!=null?ImportService.Source(value):null;conversionDirty=false;draftEdited=false;appearanceProposed=value!=null;appearanceEdits=AppearanceEdits.None;previewDirty=true;Build();});
-            Button(inputs,"Start a new import",()=>{if(!AllowDiscardDraft())return;editing=null;source=null;draft=null;conversionDirty=false;draftEdited=false;appearanceProposed=false;appearanceEdits=AppearanceEdits.None;inference=null;Build();});
-            Button(inputs,"Propose source projection",()=>Generate(true),false,()=>CanProject);
-            Button(inputs,"Reimport: keep approved profile and settings",()=>Generate(false),false,()=>CanProject&&editing!=null);
-            if(draft==null){Help(inputs,"Next: select an FBX. If the model appears edge-on, choose a different projection plane after import.");return;}
-            var profile=Section("2. Edit the outline");
-            Help(profile,"Drag the cyan outer points or orange hole points. Double-click an edge to insert a point. Delete removes a selected point; Escape cancels a drag. Ctrl+Z / Ctrl+Y undo and redo draft edits.");
-            var plane=new EnumField("Projection plane",draft.import.plane);plane.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.import.plane=(ProjectionPlane)e.newValue;ConversionChanged();});profile.Add(plane);
-            Help(profile,"XY = front view, XZ = top view, YZ = side view. Choose the view that gives the intended solid outline.");
-            var editor=new BomProfileEditor(draft,()=>{beforeDragEdited=draftEdited;BeginDraftEdit();},Changed);profileEditor=editor;profile.Add(editor);
-            editor.DragCancelled=()=>{draftEdited=beforeDragEdited;hasUnsavedChanges=draftEdited;UpdateValidation();};
-            editor.InteractionFinished=()=>{SyncContourUI();RefreshActions();};
-            var tools=new VisualElement();tools.AddToClassList("bom-row");profile.Add(tools);
-            Button(tools,"Fit outline",editor.Fit);Button(tools,"Remove selected point",editor.RemoveSelected,false,()=>editor.CanRemove);
-            Button(tools,"Add hole",AddHole,false,()=>Geometry.TryValidate(draft.profile,out _));
-            Button(tools,"Remove selected hole",()=>{BeginDraftEdit();draft.profile.holes.RemoveAt(editor.SelectedRing-1);draft.import.manuallyCorrected=true;Changed();Build();},false,()=>editor.SelectedRing>0);
-            var rings=new DropdownField("Contour",new[] {"Outer outline"}.Concat(Enumerable.Range(1,draft.profile.holes.Count).Select(i=>"Hole "+i)).ToList(),0);
-            rings.RegisterValueChangedCallback(_=>editor.SelectRing(rings.index));profile.Add(rings);
-            var selectedPoint=new Vector2Field("Selected point (metres)");selectedPoint.SetEnabled(false);profile.Add(selectedPoint);
-            selectedPoint.RegisterValueChangedCallback(e=>{editor.SetSelectedPoint(e.newValue);selectedPoint.SetValueWithoutNotify(editor.SelectedPoint);});
-            editor.SelectionChanged=()=>{rings.SetValueWithoutNotify(rings.choices[editor.SelectedRing]);selectedPoint.SetValueWithoutNotify(editor.SelectedPoint);selectedPoint.SetEnabled(editor.HasSelection);RefreshActions();};
-            var snap=new Toggle("Snap dragged points to a grid") {value=false};snap.RegisterValueChangedCallback(e=>editor.Snap=e.newValue);profile.Add(snap);
-            var grid=new FloatField("Grid spacing (metres)") {value=editor.GridSize,isDelayed=true};grid.RegisterValueChangedCallback(e=>{if(Geometry.Positive(e.newValue)&&e.newValue>=Geometry.Tolerance)editor.GridSize=e.newValue;else grid.SetValueWithoutNotify(editor.GridSize);});profile.Add(grid);
-            Help(profile,"Scroll over the outline to zoom; middle-drag to pan. Cyan = outer boundary, orange = holes, red = disconnected regions that still need correction.");
-            validation=new Label();validation.AddToClassList("bom-report");profile.Add(validation);
-            refreshButton=Button(profile,"Update projection (replaces manual outline edits)",()=>Generate(true),false,()=>CanProject&&conversionDirty);
-            if(draft.disconnectedProposal.Count>0)
-            {
-                Help(profile,(draft.disconnectedProposal.Count+1)+" disconnected regions were proposed. Correct the outer contour or explicitly discard unwanted regions before approval.");
-                Button(profile,"Use corrected outer contour as the sole region",()=>{BeginDraftEdit();draft.disconnectedProposal.Clear();draft.import.manuallyCorrected=true;Changed();Build();});
-            }
-            var gameplay=Section("3. Choose how the piece behaves");
-            Help(gameplay,"Material controls weight and blast resistance. Choose an existing asset with the picker, or create one here; its initial values are editable, not final game tuning.");
-            ObjectField<MaterialDefinition>(gameplay,"Gameplay material",draft.material,v=>{BeginDraftEdit();draft.material=v;Changed();Build();});
-            Button(gameplay,"Create material...",()=>CreateMaterial());
-            Button(gameplay,"Edit selected material",()=>Selection.activeObject=draft.material,false,()=>draft.material!=null);
-            var mode=new DropdownField("Damage behaviour",new System.Collections.Generic.List<string> {"Destructible: blasts remove material","Indestructible: blocks blasts"},draft.destruction.mode==DestructionMode.Subtract?0:1);
-            mode.RegisterValueChangedCallback(_=>{BeginDraftEdit();draft.destruction.mode=mode.index==0?DestructionMode.Subtract:DestructionMode.Indestructible;Changed();Build();});gameplay.Add(mode);
-            if(draft.destruction.mode==DestructionMode.Subtract)
-            {
-                Help(gameplay,"Destructible pieces need a response asset, which controls their additional blast movement.");
-                ObjectField<DestructionResponse>(gameplay,"Subtraction response",draft.destruction.response,v=>{BeginDraftEdit();draft.destruction.response=v;Changed();Build();});
-                Button(gameplay,"Create destruction response...",()=>CreateResponse());
-                Button(gameplay,"Edit selected response",()=>Selection.activeObject=draft.destruction.response,false,()=>draft.destruction.response!=null);
-            }
-            Float(gameplay,"Response impulse multiplier",draft.destruction.impulseMultiplier,v=>draft.destruction.impulseMultiplier=v);
-            Toggle(gameplay,"Grab eligible",draft.grabEligible,v=>draft.grabEligible=v);
-            if(draft.material!=null) Help(gameplay,"Density: "+draft.material.density+" kg/m². Blast resistance: "+draft.material.blastResistance+". Both resolve from the selected material.");
-            var appearance=Section("4. Check the appearance");
-            image=new Image {scaleMode=ScaleMode.ScaleToFit};image.AddToClassList("bom-preview");appearance.Add(image);
-            Help(appearance,"This read-only 3D preview uses the same extrusion as playtests. Edit the flat outline above. Invalid outlines clear this preview until corrected.");
-            Help(appearance,"The first source material supplies an appearance proposal, not every source material or UV seam. Review the colours and face image before approval.");
-            Float(appearance,"Visual thickness (metres)",draft.thickness,v=>{draft.thickness=v;appearanceEdits|=AppearanceEdits.Thickness;});
-            Colour(appearance,"Face colour",draft.appearance.face,v=>{draft.appearance.face=v;appearanceEdits|=AppearanceEdits.Face;});Colour(appearance,"Original side colour",draft.appearance.side,v=>{draft.appearance.side=v;appearanceEdits|=AppearanceEdits.Side;});Colour(appearance,"New cut colour",draft.appearance.cut,v=>{draft.appearance.cut=v;appearanceEdits|=AppearanceEdits.Cut;});
-            ObjectField<Texture2D>(appearance,"Face image (optional)",draft.appearance.image,v=>{BeginDraftEdit();draft.appearance.image=v;draft.appearance.approvedImagePng=null;appearanceEdits|=AppearanceEdits.Image;Changed();});
-            Button(appearance,"Fit image to outline",FitImage,false,()=>Geometry.TryValidate(draft.profile,out _));
-            var advanced=new Foldout {text="Advanced: source conversion, precise vertices and texture mapping",value=false};content.Add(advanced);
-            Help(advanced,"Conversion changes update an unedited projection automatically. A manually corrected outline is retained until you explicitly update the projection; approval is blocked while conversion is pending.");
-            var orientation=new Vector3Field("Source orientation (degrees)") {value=draft.import.orientation};orientation.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.import.orientation=e.newValue;ConversionChanged();});advanced.Add(orientation);
-            var scale=new FloatField("Source scale (metres per imported unit)") {value=draft.import.scale,isDelayed=true};scale.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.import.scale=e.newValue;ConversionChanged();});advanced.Add(scale);
-            var origin=new Vector2Field("Projected origin") {value=draft.import.origin};origin.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.import.origin=e.newValue;ConversionChanged();});advanced.Add(origin);
-            contourCoordinates=new VisualElement {name="contourCoordinates"};advanced.Add(contourCoordinates);SyncContourUI();
-            Vector(advanced,"Face U vector",draft.appearance.u,v=>{draft.appearance.u=v;appearanceEdits|=AppearanceEdits.U;});Vector(advanced,"Face V vector",draft.appearance.v,v=>{draft.appearance.v=v;appearanceEdits|=AppearanceEdits.V;});Vector(advanced,"UV offset",draft.appearance.offset,v=>{draft.appearance.offset=v;appearanceEdits|=AppearanceEdits.Offset;});
-            Float(advanced,"Preview tilt",previewTilt,v=>previewTilt=Mathf.Clamp(v,0,65));
-            var wrap=new EnumField("Image wrap",draft.appearance.wrapMode);wrap.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.appearance.wrapMode=(TextureWrapMode)e.newValue;appearanceEdits|=AppearanceEdits.Wrap;Changed();});advanced.Add(wrap);
-            var filter=new EnumField("Image filtering",draft.appearance.filterMode);filter.RegisterValueChangedCallback(e=>{BeginDraftEdit();draft.appearance.filterMode=(FilterMode)e.newValue;appearanceEdits|=AppearanceEdits.Filter;Changed();});advanced.Add(filter);
-            if(!string.IsNullOrEmpty(inference)) Help(advanced,inference);
-            var approval=Section("5. Approve and continue");
-            Help(approval,editing!=null?"Approval saves a new version of this reusable piece. Existing placements use its defaults at their next test start.":"Approval saves a reusable piece asset. Placement creates a separate instance of that asset.");
-            approveButton=Button(approval,editing!=null?"Approve reviewed asset version":"Approve as new piece asset",()=>Approve(),true,()=>CanApprove);
-            continueButton=Button(approval,"Approve and continue to placement",()=>{if(Approve()){placementAsset=editing;tab=1;Build();Message("Piece approved. Choose or create a level, then place it.");}},true,()=>CanApprove);
-            Button(approval,"Cancel proposal",()=>{BeginDraftEdit();draft=editing!=null?editing.Draft():null;conversionDirty=false;draftEdited=false;appearanceProposed=editing!=null;appearanceEdits=AppearanceEdits.None;inference=null;previewDirty=true;Build();Message("Proposal cancelled; approved assets and placements retain their prior state.");});
-            UpdateValidation();
-            previewDirty=true;
-        }
+        private void ImportUI() => BuildImportWorkspace();
         private bool CanProject => !Application.isPlaying&&source!=null&&string.Equals(Path.GetExtension(AssetDatabase.GetAssetPath(source)),".fbx",StringComparison.OrdinalIgnoreCase);
         private bool CanApprove => !Application.isPlaying&&!conversionDirty&&draft!=null&&AuthoringValidation.Piece(draft,editing).IsValid;
         private void SelectSource(GameObject value)
@@ -213,7 +137,7 @@ namespace BOM.Editor
         {
             conversionDirty=true;Changed();
             if(CanProject&&!draft.import.manuallyCorrected)Generate(true,false);
-            else {UpdateValidation();Message("Conversion changed. Your corrected outline is retained; update the projection explicitly before approval.");}
+            else {UpdateValidation();Message("Rebuild outline to apply the new view.");}
         }
         private void AddHole()
         {
@@ -299,6 +223,7 @@ namespace BOM.Editor
             if(regenerate&&confirmManual&&draft?.import.manuallyCorrected==true&&!EditorUtility.DisplayDialog("Replace corrected outline?","Projection replaces the pending contour edits with geometry from the source model. The approved asset stays unchanged until approval.","Replace outline","Keep edits"))return;
             if(!regenerate&&!AllowDiscardDraft())return;
             var proposal=ImportService.Propose(source,editing,regenerate,draft?.import);
+            if(draft==null&&editing==null){RestoreSelections(proposal.draft);appearanceMaterial=ImportService.SourceMaterial(source);showSource=true;previewOrbit=Vector2.zero;}
             if(proposal.report.issues.Any(i=>i.field=="Source"||i.field=="Source format"||i.field=="Projection"))
             {if(draft==null){draft=proposal.draft;conversionDirty=true;draftEdited=true;Build();}ShowReport(proposal.report);return;}
             if(regenerate&&draft!=null)
@@ -307,15 +232,21 @@ namespace BOM.Editor
                 if(appearanceProposed||editing!=null){proposal.draft.appearance=draft.appearance.Clone();proposal.draft.thickness=draft.thickness;}
                 else PreserveExplicitAppearance(proposal.draft);
             }
-            BeginDraftEdit();draft=proposal.draft;conversionDirty=false;draftEdited=true;appearanceProposed=true;if(!regenerate)appearanceEdits=AppearanceEdits.None;inference=proposal.inference;previewDirty=true;Build();Message("Outline proposed. Drag points to correct it, choose a material and response, then approve.");
+            BeginDraftEdit();draft=proposal.draft;conversionDirty=false;draftEdited=true;appearanceProposed=true;if(!regenerate)appearanceEdits=AppearanceEdits.None;inference=proposal.inference;previewDirty=true;Build();Message("");
         }
         private void UpdateValidation()
         {
             if(validation==null||draft==null)return;
+            UpdateDimensions();
             var report=AuthoringValidation.Piece(draft,editing);
-            validation.text=(conversionDirty?"Projection settings changed: update the projection before approval.\n":"")
-                +(report.IsValid?"Outline and settings are valid. Solid area: "+Geometry.Area(draft.profile).ToString("0.#####")+" m². Ready for approval.":"Next steps:\n"+report);
-            validation.EnableInClassList("bom-error",conversionDirty||!report.IsValid);
+            Geometry.TryValidate(draft.profile,out var geometryError);profileEditor?.SetGeometryError(geometryError);
+            string hint=conversionDirty?"Rebuild outline to apply the new view.":geometryError!=null?geometryError:
+                draft.disconnectedProposal.Count>0?"Choose a region to keep.":draft.material==null?"Choose a physics material.":
+                draft.destruction.mode==DestructionMode.Subtract&&draft.destruction.response==null?"Choose a destruction response.":
+                !report.IsValid?report.issues[0].explanation:"";
+            validation.text=hint;validation.tooltip=report.ToString();
+            validation.EnableInClassList("bom-error",geometryError!=null&&draft.profile.outer.points.Count>=3);
+            if(approveButton!=null)approveButton.tooltip=hint;if(continueButton!=null)continueButton.tooltip=hint;
         }
         private bool Approve(string newPath=null)
         {
@@ -324,18 +255,18 @@ namespace BOM.Editor
             PieceDefinition target=editing;string path=null;
             if(target==null)
             {
-                path=newPath??EditorUtility.SaveFilePanelInProject("Approve BOM piece","NewPiece","asset","Save the approved reusable definition.");if(string.IsNullOrEmpty(path))return false;
+                path=newPath??EditorUtility.SaveFilePanelInProject("Save BOM piece",source!=null?source.name:"NewPiece","asset","Save the reusable piece.",EditorPrefs.GetString(PreferenceRoot+"Folder","Assets"));if(string.IsNullOrEmpty(path))return false;
                 if(!BomAuthoringAssets.NewPath(path,out var error)){Message(error);return false;}
                 target=CreateInstance<PieceDefinition>();
             }
             if(!ImportService.Approve(target,draft,out report)) {if(editing==null) DestroyImmediate(target);ShowReport(report);return false;}
             if(path!=null)AssetDatabase.CreateAsset(target,path);AssetDatabase.SaveAssetIfDirty(target);editing=target;draft=target.Draft();placementAsset=target;
-            conversionDirty=false;draftEdited=false;appearanceProposed=true;appearanceEdits=AppearanceEdits.None;previewDirty=true;Build();Message("Approved "+target.name+" version "+target.Version+". Inheriting placements resolve these defaults at the next test start.");return true;
+            conversionDirty=false;draftEdited=false;appearanceProposed=true;appearanceEdits=AppearanceEdits.None;previewDirty=true;RememberSelections();Build();Message("Saved "+target.name+".");return true;
         }
         private void CreateMaterial(string path=null)
-        {var asset=BomAuthoringAssets.Create<MaterialDefinition>(path,"NewMaterial",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.material=asset;Changed();Build();Selection.activeObject=asset;Message("Material created with editable initial values. Set its density/resistance in the Inspector before approval.");}
+        {var asset=BomAuthoringAssets.Create<MaterialDefinition>(path,"NewMaterial",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.material=asset;Changed();Build();Message("Material created.");}
         private void CreateResponse(string path=null)
-        {var asset=BomAuthoringAssets.Create<DestructionResponse>(path,"NewDestructionResponse",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.destruction.response=asset;Changed();Build();Selection.activeObject=asset;Message("Response created and selected. Its impulse scale is editable in the Inspector.");}
+        {var asset=BomAuthoringAssets.Create<DestructionResponse>(path,"NewDestructionResponse",out var error);if(asset==null){if(error!=null)Message(error);return;}BeginDraftEdit();draft.destruction.response=asset;Changed();Build();Message("Response created.");}
         private void LevelField(VisualElement parent)
         {
             if(level==null&&Selection.activeGameObject!=null) level=Selection.activeGameObject.GetComponentInParent<LevelAuthoring>();
@@ -344,28 +275,26 @@ namespace BOM.Editor
         private void PlacementUI()
         {
             var section=Section("Choose a level and place the approved piece");LevelField(section);
-            Help(section,"A level groups placements, connections, fixed supports and shared explosion presets. Create a level if you do not have one yet.");
+
             Button(section,"Create level authoring group",CreateLevel);
-            ObjectField<PieceDefinition>(section,"Piece",placementAsset,v=>{placementAsset=v;RefreshActions();});
-            if(placementAsset==null)Help(section,"Next: approve a piece in Import / review, or select an existing approved piece above.");
-            if(level==null)Help(section,"Next: select a level above or create a level authoring group.");
-            Button(section,"Place piece",PlacePiece,true,()=>level!=null&&placementAsset!=null&&placementAsset.IsApproved&&!Application.isPlaying);
-            Help(section,"Each placement creates its own runtime body. Add fixed support references in the level inspector. Save a selected group as a normal Unity prefab to reuse an assembly.");
+            ObjectField<PieceDefinition>(section,"Piece",placementAsset,v=>{ClearPlacementPreview();placementAsset=v;RefreshActions();});
+            Button(section,"Place in scene",StartPlacementPreview,true,()=>level!=null&&placementAsset!=null&&placementAsset.IsApproved&&!Application.isPlaying);
+            if(placementAsset==null)Help(section,"Choose a saved piece.");
+            if(level==null)Help(section,"Choose or create a level.");
+            Button(section,"Place at view centre",PlacePiece,true,()=>level!=null&&placementAsset!=null&&placementAsset.IsApproved&&!Application.isPlaying);
+            section.tooltip="Each placement is an independent body. Save groups as Unity prefabs.";
             var supports=Section("Choose fixed supports (optional)");
-            Help(supports,"Pieces normally move under gravity. Select placements in the Hierarchy or Scene view, then mark those that should remain fixed. This does not change their material or destruction behaviour.");
+
             Button(supports,"Make selected pieces fixed supports",()=>SetSupports(true),false,()=>SelectedPlacements().Length>0);
             Button(supports,"Make selected pieces movable",()=>SetSupports(false),false,()=>SelectedPlacements().Length>0);
             Button(section,"Validate level",Compile,false,()=>level!=null);
             Button(section,"Continue to connections",()=>{tab=2;Build();},true,()=>level!=null&&level.GetComponentsInChildren<PiecePlacement>(true).Length>0);
         }
         private void CreateLevel()
-        {var go=new GameObject("BOM Level");Undo.RegisterCreatedObjectUndo(go,"Create BOM level");level=go.AddComponent<LevelAuthoring>();Selection.activeGameObject=go;Build();Message("Level created. Place a piece, then choose or create a shared explosion preset in Playtest.");}
+        {var go=new GameObject("BOM Level");Undo.RegisterCreatedObjectUndo(go,"Create BOM level");level=go.AddComponent<LevelAuthoring>();Selection.activeGameObject=go;Build();Message("Level created.");}
         private void PlacePiece()
         {
-            if(level==null||placementAsset==null||!placementAsset.IsApproved||Application.isPlaying)return;
-            var go=new GameObject(placementAsset.name);Undo.RegisterCreatedObjectUndo(go,"Place BOM piece");go.transform.SetParent(level.transform,false);
-            go.AddComponent<PiecePlacement>().piece=placementAsset;Selection.activeGameObject=go;EditorSceneManager.MarkSceneDirty(level.gameObject.scene);Build();
-            Message("Piece placed and selected. Move it with Unity's handles; rotate around Z and use positive X/Y scale. Connect touching pieces next.");
+            var view=SceneView.lastActiveSceneView;PlacePieceAt(view!=null?(Vector2)view.pivot:Vector2.zero);
         }
         private PiecePlacement[] SelectedPlacements() => level==null?Array.Empty<PiecePlacement>():Selection.gameObjects.Select(g=>g.GetComponent<PiecePlacement>()).Where(p=>p!=null&&p.transform.IsChildOf(level.transform)).ToArray();
         private void SetSupports(bool fixedSupport)
@@ -378,12 +307,12 @@ namespace BOM.Editor
         private void ConnectionUI()
         {
             var inputs=Section("Select endpoints");LevelField(inputs);
-            Help(inputs,editingConnection!=null?"Editing the selected saved bond. Changing endpoints starts a new connection.":"Creating a new connection. Use a saved bond's inspector to explicitly edit it.");
+            if(editingConnection!=null)Help(inputs,"Editing "+editingConnection.name);
             ObjectField<PiecePlacement>(inputs,"Piece A",endpointA,v=>SetConnectionEndpoints(v,endpointB),true);
             ObjectField<PiecePlacement>(inputs,"Piece B",endpointB,v=>SetConnectionEndpoints(endpointA,v),true);
             Button(inputs,"New connection",()=>SetConnectionEndpoints(endpointA,endpointB));
             Button(inputs,"Use two selected pieces",()=>{var selected=Selection.gameObjects.Select(g=>g.GetComponent<PiecePlacement>()).Where(p=>p!=null).ToArray();if(selected.Length==2) SetConnectionEndpoints(selected[0],selected[1]);else Message("Select exactly two piece placements.");});
-            Help(inputs,"Select two placed pieces that share an edge. A gap or point-only contact is not a bond; preview alignment if their parallel edges need to meet. Creation and explicit saved-bond editing are separate modes.");
+            inputs.tooltip="Select two pieces with a shared edge. Preview alignment to close a gap.";
             Func<bool> hasPair=()=>level!=null&&endpointA!=null&&endpointB!=null&&endpointA!=endpointB;
             Button(inputs,"Propose shared-boundary bond",()=>ProposeConnection(false),false,hasPair);Button(inputs,"Preview alignment of parallel boundaries",()=>ProposeConnection(true),false,hasPair);
             Button(inputs,"Continue to playtest",()=>{tab=3;Build();},true,()=>level!=null);
@@ -392,7 +321,7 @@ namespace BOM.Editor
             var review=Section("Review paired attachment region");Vector(review,"World start",proposal.start,v=>proposal.start=v);Vector(review,"World end",proposal.end,v=>proposal.end=v);
             Float(review,"Strength per metre",proposal.strength,v=>proposal.strength=v);Toggle(review,"Attachment-loss policy",proposal.attachmentLoss,v=>proposal.attachmentLoss=v);
             Float(review,"Minimum surviving fraction (0–1)",proposal.minimumFraction,v=>proposal.minimumFraction=v);
-            Help(review,"Alignment offset for B: "+proposal.translationB+". Force and moment capacities derive from the single strength and surviving paired length. No percentage cutoff is enabled by default.");
+            if(proposal.translationB!=Vector2.zero)Help(review,"Alignment offset: "+proposal.translationB);
             Button(review,"Confirm connection",ConfirmConnection,true);
             Button(review,"Cancel connection proposal",()=>{SetConnectionEndpoints(endpointA,endpointB);Message("Cancelled; transforms and saved connections are unchanged.");});
             if(editingConnection!=null) Button(review,"Remove saved connection",()=>{Undo.DestroyObjectImmediate(editingConnection.gameObject);editingConnection=null;connection=null;Build();});
@@ -433,13 +362,13 @@ namespace BOM.Editor
         private void TestUI()
         {
             var inputs=Section("Choose a level and set up a local test");LevelField(inputs);
-            Help(inputs,"A test starts from a frozen copy of your level. Runtime destruction never changes the approved piece assets. Reset returns to that captured start; start again to include later authoring edits.");
+            inputs.tooltip="Playtests capture a copy of the level. Restart to include authoring changes.";
             var setup=Section("Shared explosion presets");
-            Help(setup,"Choose a preset by name, or create one here. Presets specify radius, reach budget and fragment impulse; their values are copied at test start. Editing an asset does not change a running test.");
+            setup.tooltip="Radius, reach budget and impulse are captured at test start.";
             ObjectField<ExplosionPreset>(setup,"Preset to add",presetToAdd,v=>{presetToAdd=v;RefreshActions();});
             Button(setup,"Add selected preset to level",()=>{AddPreset(presetToAdd);Build();},false,()=>!Application.isPlaying&&level!=null&&presetToAdd!=null&&presetToAdd.TryValidate(out _)&&!(level.testPresets?.Contains(presetToAdd)??false));
             Button(setup,"Create preset and add to level...",()=>CreatePreset(),false,()=>!Application.isPlaying&&level!=null);
-            if(level?.testPresets==null||level.testPresets.Count==0)Help(setup,"Next: add or create at least one shared preset before entering Play mode.");
+            if(level?.testPresets==null||level.testPresets.Count==0)Help(setup,"Add an explosion preset.");
             else foreach(var configured in level.testPresets)Help(setup,configured==null?"Missing preset: replace the reference in the level Inspector.":configured.name+" — radius "+configured.radius+" m, reach budget "+configured.reachBudget+", impulse speed "+configured.impulseSpeed+" m/s");
             Button(setup,"Refresh preset list",Build);
             Button(inputs,"Validate full level",Compile,false,()=>level!=null);
@@ -453,7 +382,8 @@ namespace BOM.Editor
             var presetField=new DropdownField {label=captured!=null?"Captured explosion preset":"Explosion preset (captured at start)",choices=choices,name="explosionPreset"};
             if(choices.Count>0){preset=Mathf.Clamp(preset,0,choices.Count-1);presetField.index=preset;}else presetField.SetValueWithoutNotify("No presets available");
             presetField.SetEnabled(choices.Count>0);presetField.RegisterValueChangedCallback(_=>{preset=presetField.index;RefreshActions();});explosion.Add(presetField);
-            Help(explosion,"During Play mode, Shift-click in Scene view to explode at exterior air, or enter an XY origin and use Run explosion. Origins inside solid material or enclosed cavities are currently unsupported.");
+            Help(explosion,"Shift-click exterior air in Scene view to explode.");
+            explosion.tooltip="Origins inside solids or enclosed cavities are unsupported.";
             Button(explosion,"Run explosion",()=>{level.Explode(explosionOrigin,preset);Message(level.LastReport);},true,()=>Application.isPlaying&&level?.Session!=null&&captured!=null&&preset>=0&&preset<captured.Count&&Geometry.Finite(explosionOrigin));
             var recovery=new Foldout {text="Advanced: current-state snapshots and reference fixtures",value=false};content.Add(recovery);
             Button(recovery,"Capture committed world",()=>{snapshot=level.Session.Capture(true);Build();Message("Captured one committed state, including image and definition data.");},false,()=>Application.isPlaying&&level?.Session!=null);
@@ -472,53 +402,10 @@ namespace BOM.Editor
         }
         private void CreatePreset(string path=null)
         {if(level==null||Application.isPlaying)return;var asset=BomAuthoringAssets.Create<ExplosionPreset>(path,"NewExplosionPreset",out var error);if(asset==null){if(error!=null)Message(error);return;}AddPreset(asset);Build();Selection.activeObject=asset;Message("Preset created and added. Edit its radius, reach budget and impulse speed in the Inspector, then start a test.");}
-        private void ClearPreview()
-        {if(previewObject!=null) DestroyImmediate(previewObject);foreach(var asset in previewAssets) if(asset!=null) DestroyImmediate(asset);previewAssets.Clear();previewObject=null;}
-        private void Tick()
-        {
-            if(!windowEnabled||previewUpdating)return;previewUpdating=true;
-            try
-            {
-                if(EditorApplication.timeSinceStartup>=nextControls){nextControls=EditorApplication.timeSinceStartup+.4;UpdateValidation();RefreshActions();}
-                if(tab!=0||draft==null||image==null||profileEditor?.IsDragging==true||EditorApplication.timeSinceStartup<nextPreview) return;
-                nextPreview=EditorApplication.timeSinceStartup+.2;
-                if(preview==null)
-                {var created=new PreviewRenderUtility();if(!windowEnabled){created.Cleanup();return;}preview=created;}
-                if(previewDirty)
-                {
-                    previewDirty=false;ClearPreview();image.image=null;if(!Geometry.TryValidate(draft.profile,out _)||!Geometry.Positive(draft.thickness)) return;
-                    previewObject=new GameObject("BOM review preview") {hideFlags=HideFlags.HideAndDontSave};
-                    var appearance=draft.appearance.Clone();if(appearance.image!=null) appearance.approvedImagePng=ImportService.ImagePng(appearance.image);
-                    var record=new AppearanceRecord {face=appearance.face,side=appearance.side,cut=appearance.cut,imagePng=appearance.approvedImagePng,wrapMode=appearance.wrapMode,filterMode=appearance.filterMode};
-                    var materials=Extrusion.Materials(record,out var texture);previewAssets.AddRange(materials);if(texture!=null) previewAssets.Add(texture);
-                    foreach(var region in new[] {draft.profile}.Concat(draft.disconnectedProposal))
-                    {
-                        if(!Geometry.TryValidate(region,out _)) continue;var part=new GameObject("Proposed region");part.transform.SetParent(previewObject.transform,false);
-                        var state=Extrusion.PreviewState(draft);state.region=region;var mesh=Extrusion.Build(state);previewAssets.Add(mesh);
-                        part.AddComponent<MeshFilter>().sharedMesh=mesh;part.AddComponent<MeshRenderer>().sharedMaterials=materials;
-                        int ring=0;
-                        foreach(var contour in region.Contours)
-                        {
-                            var lines=new GameObject("Gameplay outline");lines.transform.SetParent(part.transform,false);var line=lines.AddComponent<LineRenderer>();line.useWorldSpace=false;line.loop=true;
-                            line.positionCount=contour.points.Count;line.SetPositions(contour.points.Select(p=>new Vector3(p.x,p.y,-draft.thickness*.5f-.005f)).ToArray());line.widthMultiplier=.015f;
-                            var lineMaterial=new Material(materials[1]);lineMaterial.SetColor("_BaseColor",ring++==0?Color.cyan:new Color(1,.65f,.15f));previewAssets.Add(lineMaterial);line.sharedMaterial=lineMaterial;
-                        }
-                    }
-                    preview.AddSingleGO(previewObject);
-                }
-                if(previewObject==null) return;
-                var points=draft.profile.outer.points;var centre=new Vector3((points.Min(p=>p.x)+points.Max(p=>p.x))*.5f,(points.Min(p=>p.y)+points.Max(p=>p.y))*.5f,0);
-                previewObject.transform.rotation=Quaternion.Euler(previewTilt,0,0);centre=previewObject.transform.TransformPoint(centre);
-                preview.camera.orthographic=true;preview.camera.orthographicSize=Mathf.Max((points.Max(p=>p.y)-points.Min(p=>p.y))*.65f,(points.Max(p=>p.x)-points.Min(p=>p.x))*.4f)+.2f;
-                preview.camera.transform.position=centre+Vector3.back*20;preview.camera.transform.LookAt(centre);preview.camera.nearClipPlane=.01f;preview.camera.farClipPlane=100;
-                preview.camera.clearFlags=CameraClearFlags.SolidColor;preview.camera.backgroundColor=new Color(.07f,.1f,.13f);
-                preview.BeginPreview(new Rect(0,0,512,310),GUIStyle.none);preview.Render(true);image.image=preview.EndPreview();
-            }
-            catch(Exception e) {Message("Preview: "+e.Message);}
-            finally{previewUpdating=false;}
-        }
+        private void Tick() => RenderImportPreview();
         private void SceneGUI(SceneView view)
         {
+            if(PlacementSceneGUI(view))return;
             if(connection!=null)
             {
                 Handles.color=Color.yellow;Handles.DrawAAPolyLine(6,new Vector3(connection.start.x,connection.start.y,0),new Vector3(connection.end.x,connection.end.y,0));

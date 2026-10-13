@@ -22,14 +22,17 @@ namespace BOM.Tests
         private UnityEngine.Object[] selection;
         private Scene scene;
         private string folder;
+        private readonly Dictionary<string,string> preferences=new Dictionary<string,string>();
         private T Own<T>(T item) where T:UnityEngine.Object {owned.Add(item);return item;}
         [SetUp] public void Setup()
-        {selection=Selection.objects;scene=EditorSceneManager.NewPreviewScene();folder="Assets/BOM/Tests/UX-Temporary-"+Guid.NewGuid().ToString("N");AssetDatabase.CreateFolder("Assets/BOM/Tests",folder.Substring("Assets/BOM/Tests/".Length));}
+        {foreach(string key in new[]{"BOM.Authoring.Material","BOM.Authoring.Response","BOM.Authoring.Folder"}){preferences[key]=EditorPrefs.HasKey(key)?EditorPrefs.GetString(key):null;EditorPrefs.DeleteKey(key);}
+            selection=Selection.objects;scene=EditorSceneManager.NewPreviewScene();folder="Assets/BOM/Tests/UX-Temporary-"+Guid.NewGuid().ToString("N");AssetDatabase.CreateFolder("Assets/BOM/Tests",folder.Substring("Assets/BOM/Tests/".Length));}
         [TearDown] public void Cleanup()
         {
             foreach(var item in owned.AsEnumerable().Reverse())if(item!=null){Undo.ClearUndo(item);if(item is EditorWindow window){window.DiscardChanges();window.Close();}else UnityEngine.Object.DestroyImmediate(item);}
             owned.Clear();if(scene.IsValid()&&scene.isLoaded)EditorSceneManager.ClosePreviewScene(scene);
             if(AssetDatabase.IsValidFolder(folder))AssetDatabase.DeleteAsset(folder);Selection.objects=selection;
+            foreach(var pair in preferences){if(pair.Value==null)EditorPrefs.DeleteKey(pair.Key);else EditorPrefs.SetString(pair.Key,pair.Value);}preferences.Clear();
         }
         private static void Set(BomAuthoringWindow w,string field,object value) => typeof(BomAuthoringWindow).GetField(field,BindingFlags.NonPublic|BindingFlags.Instance).SetValue(w,value);
         private static T Get<T>(BomAuthoringWindow w,string field) => (T)typeof(BomAuthoringWindow).GetField(field,BindingFlags.NonPublic|BindingFlags.Instance).GetValue(w);
@@ -82,6 +85,82 @@ namespace BOM.Tests
             w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Model (FBX)").value=model;
             Assert.That(Get<PieceDraft>(w,"draft").profile.outer.points,Is.Empty);Assert.That(Get<PieceDefinition>(w,"editing"),Is.Null);
             Assert.That(Get<bool>(w,"conversionDirty"),Is.True);return w;
+        }
+
+        [Test,Category("ImportUX")] public void SizeControlsPreserveTextureCoordinatesAndLeaveApprovedDataUntouched()
+        {
+            var piece=Piece(true);var before=JsonUtility.ToJson(piece.Draft());var w=Window(piece);
+            w.rootVisualElement.Q<FloatField>("targetWidth").value=8;
+            var resized=Get<PieceDraft>(w,"draft");Assert.That(Geometry.Area(resized.profile),Is.EqualTo(60).Within(.0001));
+            Assert.That(resized.profile.holes[0].points.Min(p=>p.x),Is.EqualTo(2));Assert.That(resized.profile.holes[0].points.Max(p=>p.y),Is.EqualTo(4));
+            Assert.That(Vector2.Dot(resized.appearance.u,new Vector2(8,8)),Is.EqualTo(4));
+            Assert.That(resized.thickness,Is.EqualTo(.25f));Assert.That(resized.import.projectedScale,Is.EqualTo(new Vector2(2,2)));
+            Set(w,"lockProportions",false);w.rootVisualElement.Q<FloatField>("targetHeight").value=3;
+            Assert.That(Get<PieceDraft>(w,"draft").profile.outer.points.Max(p=>p.y),Is.EqualTo(3));
+            Assert.That(w.rootVisualElement.Q<Label>("dimensions").text,Does.Contain("8 × 3 m"));
+            Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
+        }
+        [Test,Category("ImportUX")] public void ResizedImportedOutlineMatchesExplicitReprojection()
+        {
+            var w=Window();Act(w,"SelectSource",AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.SourcePath));
+            w.rootVisualElement.Q<FloatField>("targetWidth").value=6;
+            var resized=Get<PieceDraft>(w,"draft");Assert.That(resized.import.manuallyCorrected,Is.False);
+            var regenerated=ImportService.Propose(Get<GameObject>(w,"source"),settings:resized.import).draft;
+            Assert.That(Geometry.Area(regenerated.profile),Is.EqualTo(Geometry.Area(resized.profile)).Within(.0001));
+            Assert.That(regenerated.profile.outer.points.Max(p=>p.x)-regenerated.profile.outer.points.Min(p=>p.x),Is.EqualTo(6).Within(.0001));
+        }
+        [Test,Category("ImportUX")] public void ProjectionThicknessUsesChosenDepthAxisAndSourceOrientation()
+        {
+            var model=AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.Folder+"/Source/EdgeOnPlate.fbx");
+            var side=ImportService.Propose(model,settings:new ImportSettings {plane=ProjectionPlane.YZ});
+            Assert.That(Geometry.TryValidate(side.draft.profile,out var error),Is.True,error);
+            Assert.That(side.draft.thickness,Is.EqualTo(.05f).Within(.0001));
+            var rotated=ImportService.Propose(model,settings:new ImportSettings {orientation=new Vector3(0,90,0)});
+            Assert.That(Geometry.TryValidate(rotated.draft.profile,out error),Is.True,error);
+            Assert.That(rotated.draft.thickness,Is.EqualTo(.05f).Within(.0001));
+        }
+        [Test,Category("ImportUX")] public void ImportedRootUnitScaleIsPreservedAndSourceTranslationDoesNotMoveTheOutline()
+        {
+            var root=Own(new GameObject("Centimetre source"));root.transform.position=new Vector3(10,20,30);root.transform.localScale=Vector3.one*.01f;
+            var child=new GameObject("Offset mesh");child.transform.SetParent(root.transform,false);child.transform.localPosition=new Vector3(100,0,0);
+            var filter=child.AddComponent<MeshFilter>();
+            var projected=ImportService.ToAuthoring(ImportService.MeshToSource(root,filter).MultiplyPoint3x4(new Vector3(100,50,0)),new ImportSettings());
+            Assert.That(Vector3.Distance(projected,new Vector3(2,.5f,0)),Is.LessThan(.0001));
+        }
+        [UnityTest,Category("ImportUX")] public IEnumerator OriginalModelRemainsVisibleWhenOutlineIsInvalidAndViewSwitchKeepsSelection()
+        {
+            var w=Window();Act(w,"SelectSource",AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.SourcePath));yield return null;yield return null;
+            var draft=Get<PieceDraft>(w,"draft");var editor=Canvas(w);editor.SelectProfilePoint(draft.profile.outer.points[0],.01f);
+            int selected=editor.SelectedVertex;Click(w,"Result");Assert.That(Canvas(w),Is.SameAs(editor));Assert.That(Canvas(w).SelectedVertex,Is.EqualTo(selected));Click(w,"Source + outline");
+            draft.profile.outer.points[1]=draft.profile.outer.points[0];draft.profile.outer.points[2]=draft.profile.outer.points[0];
+            Assert.That(Geometry.TryValidate(draft.profile,out _),Is.False);Set(w,"nextPreview",0d);Act(w,"Tick");
+            var preview=Get<BomModelPreview>(w,"modelPreview");Assert.That(preview,Is.Not.Null);Assert.That(preview.HasSource,Is.True);
+            Assert.That(w.rootVisualElement.Q<Image>("modelPreview").image,Is.Not.Null);
+        }
+        [UnityTest,Category("ImportUX")] public IEnumerator ClickingDisconnectedRegionKeepsThatRegionWithoutChangingSavedPiece()
+        {
+            var piece=Piece();var before=JsonUtility.ToJson(piece.Draft());var w=Window(piece);var draft=Get<PieceDraft>(w,"draft");
+            draft.disconnectedProposal.Add(Geometry.Rectangle(6,0,8,2));Act(w,"Build");yield return null;yield return null;
+            var editor=Canvas(w);Pointer(editor,EventType.MouseDown,editor.ProfileToCanvas(new Vector2(7,1)));Pointer(editor,EventType.MouseUp,editor.ProfileToCanvas(new Vector2(7,1)));
+            Assert.That(editor.SelectedRegion,Is.EqualTo(1));Click(w,"Keep selected region");
+            Assert.That(Get<PieceDraft>(w,"draft").profile.outer.points.Min(p=>p.x),Is.EqualTo(6));
+            Assert.That(Get<PieceDraft>(w,"draft").disconnectedProposal,Is.Empty);Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
+        }
+        [UnityTest,Category("ImportUX")] public IEnumerator InlineMaterialEditingUpdatesSharedDefinitionAndSupportsUndo()
+        {
+            var w=Window(Piece());Act(w,"CreateMaterial",folder+"/InlineMaterial.asset");yield return null;yield return null;
+            var material=Get<PieceDraft>(w,"draft").material;var property=w.rootVisualElement.Q<PropertyField>("physics-density");
+            var field=property.Q<FloatField>();Assert.That(field,Is.Not.Null);
+            Undo.IncrementCurrentGroup();field.value=7;yield return null;yield return null;
+            Assert.That(material.density,Is.EqualTo(7));Act(w,"UpdateValidation");Assert.That(w.rootVisualElement.Q<Label>("dimensions").text,Does.Contain("112 kg"));
+            Undo.PerformUndo();yield return null;Assert.That(material.density,Is.EqualTo(2));
+        }
+        [Test,Category("ImportUX")] public void DetachedSizeFieldCannotResizeANewImport()
+        {
+            var w=Window(Piece());var old=w.rootVisualElement.Q<FloatField>("targetWidth");
+            Act(w,"SelectSource",AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.SourcePath));
+            var before=JsonUtility.ToJson(Get<PieceDraft>(w,"draft"));old.value=50;
+            Assert.That(JsonUtility.ToJson(Get<PieceDraft>(w,"draft")),Is.EqualTo(before));
         }
 
         [UnityTest,Category("V3Review")] public IEnumerator CanvasDeletionSynchronizesAdvancedCoordinatesAndTargetsCurrentVertex()
@@ -137,13 +216,13 @@ namespace BOM.Tests
         {
             var approved=Piece();var before=JsonUtility.ToJson(approved.Draft());var w=FailedInitialProjection();
             Act(w,"CreateMaterial",folder+"/RepairMaterial.asset");Act(w,"CreateResponse",folder+"/RepairResponse.asset");var pending=Get<PieceDraft>(w,"draft");var material=pending.material;var response=pending.destruction.response;
-            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Response impulse multiplier").value=3.25f;
-            w.rootVisualElement.Query<Toggle>().ToList().Single(f=>f.label=="Grab eligible").value=false;
-            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Visual thickness (metres)").value=.45f;
-            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Face colour").value=Color.magenta;
-            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Original side colour").value=Color.black;
-            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="New cut colour").value=Color.yellow;
-            var image=Own(new Texture2D(2,2));image.Apply();w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Face image (optional)").value=image;
+            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Impulse multiplier").value=3.25f;
+            w.rootVisualElement.Query<Toggle>().ToList().Single(f=>f.label=="Grabbable").value=false;
+            w.rootVisualElement.Query<FloatField>().ToList().Single(f=>f.label=="Thickness (m)").value=.45f;
+            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Face").value=Color.magenta;
+            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Sides").value=Color.black;
+            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Cuts").value=Color.yellow;
+            var image=Own(new Texture2D(2,2));image.Apply();w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Face texture").value=image;
             w.rootVisualElement.Query<Vector2Field>().ToList().Single(f=>f.label=="Face U vector").value=new Vector2(2,.5f);
             w.rootVisualElement.Query<Vector2Field>().ToList().Single(f=>f.label=="Face V vector").value=new Vector2(-.5f,3);
             w.rootVisualElement.Query<Vector2Field>().ToList().Single(f=>f.label=="UV offset").value=new Vector2(.1f,.3f);
@@ -155,7 +234,7 @@ namespace BOM.Tests
             Assert.That(updated.material,Is.SameAs(material));Assert.That(updated.destruction.response,Is.SameAs(response));Assert.That(updated.destruction.mode,Is.EqualTo(DestructionMode.Subtract));
             Assert.That(updated.destruction.impulseMultiplier,Is.EqualTo(3.25f));Assert.That(updated.grabEligible,Is.False);Assert.That(updated.thickness,Is.EqualTo(.45f));
             Assert.That(JsonUtility.ToJson(updated.appearance),Is.EqualTo(appearance));Assert.That(Get<bool>(w,"conversionDirty"),Is.False);Assert.That(Get<PieceDefinition>(w,"editing"),Is.Null);
-            Assert.That(Find(w,"Approve as new piece asset").enabledSelf,Is.True);Assert.That(JsonUtility.ToJson(approved.Draft()),Is.EqualTo(before));
+            Assert.That(Find(w,"Save piece").enabledSelf,Is.True);Assert.That(JsonUtility.ToJson(approved.Draft()),Is.EqualTo(before));
         }
         [Test,Category("V3Review")] public void FailedInitialProjectionInfersUntouchedAppearanceAfterRepair()
         {
@@ -164,13 +243,13 @@ namespace BOM.Tests
             w.rootVisualElement.Query<EnumField>().ToList().Single(f=>f.label=="Projection plane").value=ProjectionPlane.YZ;
             var updated=Get<PieceDraft>(w,"draft");Assert.That(Geometry.TryValidate(updated.profile,out var error),Is.True,error);
             Assert.That(JsonUtility.ToJson(updated.appearance),Is.EqualTo(JsonUtility.ToJson(expected.appearance)));Assert.That(updated.thickness,Is.EqualTo(expected.thickness));
-            Assert.That(updated.appearance.u,Is.Not.EqualTo(Vector2.right));Assert.That(Find(w,"Approve as new piece asset").enabledSelf,Is.False);
+            Assert.That(updated.appearance.u,Is.Not.EqualTo(Vector2.right));Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
         }
         [Test,Category("V3Review")] public void FailedInitialProjectionRetainsColourWithoutSuppressingFirstUvInference()
         {
             var w=FailedInitialProjection();Act(w,"CreateMaterial",folder+"/PartialMaterial.asset");Act(w,"CreateResponse",folder+"/PartialResponse.asset");
             var pending=Get<PieceDraft>(w,"draft");var material=pending.material;var response=pending.destruction.response;
-            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Face colour").value=Color.magenta;
+            w.rootVisualElement.Query<ColorField>().ToList().Single(f=>f.label=="Face").value=Color.magenta;
             var settings=pending.import.Clone();settings.plane=ProjectionPlane.YZ;var expected=ImportService.Propose(Get<GameObject>(w,"source"),settings:settings).draft;
             w.rootVisualElement.Query<EnumField>().ToList().Single(f=>f.label=="Projection plane").value=ProjectionPlane.YZ;
             var updated=Get<PieceDraft>(w,"draft");Assert.That(updated.material,Is.SameAs(material));Assert.That(updated.destruction.response,Is.SameAs(response));Assert.That(updated.appearance.face,Is.EqualTo(Color.magenta));
@@ -195,7 +274,7 @@ namespace BOM.Tests
             Assert.That(Vector2.Distance(draft.profile.outer.points[0],to),Is.LessThan(.0001f));Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
             Undo.PerformUndo();yield return null;Assert.That(Get<PieceDraft>(w,"draft").profile.outer.points[0],Is.EqualTo(from));
             Undo.PerformRedo();yield return null;Assert.That(Vector2.Distance(Get<PieceDraft>(w,"draft").profile.outer.points[0],to),Is.LessThan(.0001f));
-            Click(w,"Cancel proposal");Assert.That(JsonUtility.ToJson(Get<PieceDraft>(w,"draft")),Is.EqualTo(before));Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
+            Click(w,"Discard edits");Assert.That(JsonUtility.ToJson(Get<PieceDraft>(w,"draft")),Is.EqualTo(before));Assert.That(JsonUtility.ToJson(piece.Draft()),Is.EqualTo(before));
         }
         [UnityTest] public IEnumerator HolePointDragDoesNotChangeOuterOrApprovedAsset()
         {
@@ -226,20 +305,20 @@ namespace BOM.Tests
         {
             var piece=Piece();var w=Window(piece);yield return null;yield return null;var draft=Get<PieceDraft>(w,"draft");
             Undo.IncrementCurrentGroup();Drag(Canvas(w),draft.profile.outer.points[0],new Vector2(4.5f,2));
-            Assert.That(Geometry.TryValidate(draft.profile,out _),Is.False);Assert.That(Find(w,"Approve reviewed asset version").enabledSelf,Is.False);
+            Assert.That(Geometry.TryValidate(draft.profile,out _),Is.False);Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
             Assert.That(Get<bool>(w,"draftEdited"),Is.True);Assert.That(piece.Version,Is.EqualTo(1));
-            Undo.PerformUndo();yield return null;Assert.That(Find(w,"Approve reviewed asset version").enabledSelf,Is.True);
+            Undo.PerformUndo();yield return null;Assert.That(Find(w,"Save piece").enabledSelf,Is.True);
         }
         [Test] public void AddHoleChoosesAnActuallySolidLocationInConcaveOrHoledShape()
         {
             var w=Window(Piece(true));Click(w,"Add hole");var draft=Get<PieceDraft>(w,"draft");
             Assert.That(draft.profile.holes,Has.Count.EqualTo(2));Assert.That(Geometry.TryValidate(draft.profile,out var error),Is.True,error);
-            Assert.That(Canvas(w).SelectedRing,Is.EqualTo(2));Click(w,"Remove selected hole");Assert.That(Get<PieceDraft>(w,"draft").profile.holes,Has.Count.EqualTo(1));
+            Assert.That(Canvas(w).SelectedRing,Is.EqualTo(2));Click(w,"Delete hole");Assert.That(Get<PieceDraft>(w,"draft").profile.holes,Has.Count.EqualTo(1));
         }
         [Test] public void MissingInputsDisableActionsAndKeepAdvancedDetailsCollapsed()
         {
-            var w=Window();Assert.That(Find(w,"Propose source projection").enabledSelf,Is.False);
-            Set(w,"tab",1);Act(w,"Build");Assert.That(Find(w,"Place piece").enabledSelf,Is.False);
+            var w=Window();Assert.That(Find(w,"Rebuild outline").enabledSelf,Is.False);
+            Set(w,"tab",1);Act(w,"Build");Assert.That(Find(w,"Place at view centre").enabledSelf,Is.False);
             Set(w,"tab",3);Act(w,"Build");Assert.That(Find(w,"Enter Play mode").enabledSelf,Is.False);Assert.That(Find(w,"Run explosion").enabledSelf,Is.False);
             Assert.That(w.rootVisualElement.Query<IntegerField>().ToList().Any(f=>f.label=="Captured preset index"),Is.False);
             Assert.That(w.rootVisualElement.Query<Foldout>().ToList().All(f=>!f.value),Is.True);
@@ -249,7 +328,7 @@ namespace BOM.Tests
             var piece=Piece();var w=Window(piece);var draft=Get<PieceDraft>(w,"draft");draft.import.manuallyCorrected=true;var old=JsonUtility.ToJson(draft.profile);
             w.rootVisualElement.Query<EnumField>().ToList().Single(f=>f.label=="Projection plane").value=ProjectionPlane.XZ;
             Assert.That(Get<bool>(w,"conversionDirty"),Is.True);Assert.That(JsonUtility.ToJson(draft.profile),Is.EqualTo(old));
-            Assert.That(Find(w,"Approve reviewed asset version").enabledSelf,Is.False);
+            Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
             Assert.That((bool)Act(w,"Approve",folder+"/MustNotSave.asset"),Is.False);Assert.That(AssetDatabase.LoadMainAssetAtPath(folder+"/MustNotSave.asset"),Is.Null);
         }
         [Test] public void SourceConversionRefreshPreservesPendingMaterialResponseAndAppearance()
@@ -265,10 +344,10 @@ namespace BOM.Tests
         {
             var level=Level();var w=Window(null,0,level);var model=AssetDatabase.LoadAssetAtPath<GameObject>(FixtureBuilder.Folder+"/Source/MultiMeshFrame.fbx");
             w.rootVisualElement.Query<ObjectField>().ToList().Single(f=>f.label=="Model (FBX)").value=model;
-            Assert.That(Get<PieceDraft>(w,"draft"),Is.Not.Null);Assert.That(Find(w,"Approve as new piece asset").enabledSelf,Is.False);
-            Act(w,"CreateMaterial",folder+"/Material.asset");Act(w,"CreateResponse",folder+"/Response.asset");Assert.That(Find(w,"Approve as new piece asset").enabledSelf,Is.True);
+            Assert.That(Get<PieceDraft>(w,"draft"),Is.Not.Null);Assert.That(Find(w,"Save piece").enabledSelf,Is.False);
+            Act(w,"CreateMaterial",folder+"/Material.asset");Act(w,"CreateResponse",folder+"/Response.asset");Assert.That(Find(w,"Save piece").enabledSelf,Is.True);
             Assert.That((bool)Act(w,"Approve",folder+"/Piece.asset"),Is.True);var approved=AssetDatabase.LoadAssetAtPath<PieceDefinition>(folder+"/Piece.asset");Assert.That(approved.IsApproved,Is.True);
-            Set(w,"tab",1);Act(w,"Build");Click(w,"Place piece");Assert.That(level.GetComponentsInChildren<PiecePlacement>(),Has.Length.EqualTo(1));
+            Set(w,"tab",1);Act(w,"Build");Click(w,"Place at view centre");Assert.That(level.GetComponentsInChildren<PiecePlacement>(),Has.Length.EqualTo(1));
             Click(w,"Make selected pieces fixed supports");Assert.That(level.foundations,Has.Count.EqualTo(1));Click(w,"Make selected pieces movable");Assert.That(level.foundations,Is.Empty);
             Set(w,"tab",3);Act(w,"Build");Assert.That(Find(w,"Enter Play mode").enabledSelf,Is.False);
             Act(w,"CreatePreset",folder+"/NamedBlast.asset");var dropdown=w.rootVisualElement.Q<DropdownField>("explosionPreset");Assert.That(dropdown.choices.Single(),Does.Contain("NamedBlast"));

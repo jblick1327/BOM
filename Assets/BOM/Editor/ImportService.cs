@@ -17,6 +17,27 @@ namespace BOM.Editor
     }
     public static class ImportService
     {
+        public static Matrix4x4 MeshToSource(GameObject source,MeshFilter filter) =>
+            Matrix4x4.TRS(Vector3.zero,source.transform.localRotation,source.transform.localScale)
+            *source.transform.worldToLocalMatrix*filter.transform.localToWorldMatrix;
+        public static Vector3 ToAuthoring(Vector3 point, ImportSettings settings)
+        {
+            point=Quaternion.Euler(settings.orientation)*point*settings.scale;
+            var projected=settings.plane==ProjectionPlane.XY?point:settings.plane==ProjectionPlane.XZ
+                ?new Vector3(point.x,point.z,point.y):new Vector3(point.y,point.z,point.x);
+            return new Vector3((projected.x-settings.origin.x)*settings.projectedScale.x,
+                (projected.y-settings.origin.y)*settings.projectedScale.y,projected.z);
+        }
+        public static Material SourceMaterial(GameObject source) => source==null?null:
+            source.GetComponentsInChildren<MeshRenderer>(true).Select(r=>r.sharedMaterial).FirstOrDefault(m=>m!=null);
+        public static void ReadAppearance(Material material,FaceAppearance appearance)
+        {
+            if(material==null)return;
+            if(material.HasProperty("_BaseColor"))appearance.face=material.GetColor("_BaseColor");
+            else if(material.HasProperty("_Color"))appearance.face=material.GetColor("_Color");
+            appearance.image=(material.HasProperty("_BaseMap")?material.GetTexture("_BaseMap"):
+                material.HasProperty("_MainTex")?material.GetTexture("_MainTex"):null) as Texture2D;
+        }
         public static ImportProposal Propose(GameObject source,PieceDefinition previous=null,bool regenerate=true,ImportSettings settings=null)
         {
             var result=new ImportProposal {draft=previous!=null?previous.Draft():new PieceDraft(),report=new ValidationReport()};
@@ -33,23 +54,19 @@ namespace BOM.Editor
             {result.report.Add(source,"Projection","Source mesh projection is an authoring operation; this FBX may not retain readable vertices during Play mode.","Stop the playtest before regenerating a source proposal. Existing approved profiles remain editable.");return result;}
             try
             {
-                var paths=new Paths64();var rotation=Quaternion.Euler(draft.import.orientation);
-                Vector2 Project(Vector3 p)
-                {
-                    p=rotation*p*draft.import.scale;
-                    var projected=draft.import.plane==ProjectionPlane.XY?new Vector2(p.x,p.y):draft.import.plane==ProjectionPlane.XZ?new Vector2(p.x,p.z):new Vector2(p.y,p.z);
-                    return projected-draft.import.origin;
-                }
+                var paths=new Paths64();float depthMin=float.PositiveInfinity,depthMax=float.NegativeInfinity;
                 var filters=source.GetComponentsInChildren<MeshFilter>(true);result.sourceMeshes=filters.Length;
                 foreach(var filter in filters)
                 {
                     var mesh=filter.sharedMesh;if(mesh==null) continue;
-                    var transform=source.transform.worldToLocalMatrix*filter.transform.localToWorldMatrix;
-                    var vertices=mesh.vertices;var triangles=mesh.triangles;result.sourceTriangles+=triangles.Length/3;
+                    var transform=MeshToSource(source,filter);
+                    var vertices=mesh.vertices.Select(p=>ToAuthoring(transform.MultiplyPoint3x4(p),draft.import)).ToArray();
+                    foreach(var vertex in vertices){depthMin=Mathf.Min(depthMin,vertex.z);depthMax=Mathf.Max(depthMax,vertex.z);}
+                    var triangles=mesh.triangles;result.sourceTriangles+=triangles.Length/3;
                     for(int i=0;i+2<triangles.Length;i+=3)
                     {
-                        var polygon=new Path64(new[] {Geometry.Point(Project(transform.MultiplyPoint3x4(vertices[triangles[i]]))),
-                            Geometry.Point(Project(transform.MultiplyPoint3x4(vertices[triangles[i+1]]))),Geometry.Point(Project(transform.MultiplyPoint3x4(vertices[triangles[i+2]])))});
+                        var polygon=new Path64(new[] {Geometry.Point(vertices[triangles[i]]),
+                            Geometry.Point(vertices[triangles[i+1]]),Geometry.Point(vertices[triangles[i+2]])});
                         if(Math.Abs(Clipper.Area(polygon))<1) continue;
                         if(Clipper.Area(polygon)<0) polygon.Reverse();paths.Add(polygon);
                     }
@@ -59,19 +76,11 @@ namespace BOM.Editor
                 draft.profile=regions[0];draft.disconnectedProposal=regions.Skip(1).ToList();draft.import.manuallyCorrected=false;
                 if(previous==null)
                 {
-                    var renderer=source.GetComponentsInChildren<MeshRenderer>(true).FirstOrDefault(r=>r.sharedMaterial!=null);
-                    var visual=renderer!=null?renderer.sharedMaterial:null;
-                    if(visual!=null)
-                    {
-                        if(visual.HasProperty("_BaseColor")) draft.appearance.face=visual.GetColor("_BaseColor");
-                        else if(visual.HasProperty("_Color")) draft.appearance.face=visual.color;
-                        draft.appearance.image=(visual.HasProperty("_BaseMap")?visual.GetTexture("_BaseMap"):visual.mainTexture) as Texture2D;
-                    }
+                    ReadAppearance(SourceMaterial(source),draft.appearance);
                     var points=draft.profile.outer.points;float x0=points.Min(p=>p.x),y0=points.Min(p=>p.y);
                     float width=points.Max(p=>p.x)-x0,height=points.Max(p=>p.y)-y0;
                     draft.appearance.u=new Vector2(1/width,0);draft.appearance.v=new Vector2(0,1/height);draft.appearance.offset=new Vector2(-x0/width,-y0/height);
-                    var bounds=source.GetComponentsInChildren<MeshFilter>(true).Where(f=>f.sharedMesh!=null).Select(f=>f.sharedMesh.bounds.size.z).DefaultIfEmpty(.25f).Max();
-                    draft.thickness=Mathf.Max(.05f,bounds*draft.import.scale);
+                    draft.thickness=Mathf.Max(.05f,depthMax-depthMin);
                 }
                 var importer=AssetImporter.GetAtPath(path) as ModelImporter;
                 result.inference="Unity FBX axes/unit conversion is applied before projection; importer global scale: "+(importer!=null?importer.globalScale:1)+". "

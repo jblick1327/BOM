@@ -5,6 +5,24 @@
 .bom-toolbar > Button { flex-grow: 1; margin-right: 4px; padding: 7px; }
 .bom-toolbar > .bom-tab-active { background-color: #176b83; -unity-font-style: bold; }
 .bom-content { flex-grow: 1; }
+.bom-workbench { flex-grow: 1; flex-direction: row; min-height: 0; }
+.bom-workbench > .bom-content { min-width: 300px; flex-basis: 340px; }
+.bom-visuals { flex-grow: 2; flex-basis: 450px; min-width: 280px; margin-right: 10px; }
+.bom-workbench.bom-narrow { flex-direction: column; }
+.bom-narrow > .bom-visuals { flex-basis: 420px; min-height: 370px; margin-right: 0; }
+.bom-narrow > .bom-content { flex-basis: 150px; }
+.bom-footer { flex-direction: row; align-items: center; padding-top: 8px; }
+.bom-footer > Label { flex-grow: 1; }
+.bom-footer > Button { margin-left: 6px; padding: 6px; }
+.bom-hidden { display: none; }
+.bom-model-preview { flex-grow: 1; flex-basis: 160px; min-height: 110px; background-color: #17202a; }
+.bom-visuals > .bom-profile-editor { flex-grow: 2; flex-basis: 200px; min-height: 140px; height: auto; flex-shrink: 1; }
+.bom-view-active { background-color: #176b83; }
+.bom-projection { flex-grow: 1; flex-basis: 80px; padding: 4px; }
+.bom-silhouette { height: 36px; }
+.bom-suggested { border-color: #5fe5ef; }
+.bom-dimensions { padding-top: 4px; padding-bottom: 4px; -unity-font-style: bold; }
+.bom-scale-bar { position: absolute; bottom: 4px; left: 12px; color: white; background-color: #17202a; }
 .bom-section { margin-bottom: 10px; padding: 9px; border-width: 1px; border-color: #555; border-radius: 4px; }
 .bom-section-title { -unity-font-style: bold; font-size: 14px; margin-bottom: 8px; }
 .bom-source { margin-bottom: 10px; padding: 8px; border-width: 1px; border-color: #555; border-radius: 4px; }
