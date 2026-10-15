@@ -11,6 +11,8 @@ Open **BOM > Authoring workspace**. See the [README](../README.md) for project s
 5. **Import appearance** copies a Unity material's base colour and texture into BOM's extrusion shader. Source shaders, UV layouts and multiple material slots are not reproduced.
 6. Resolve validation messages, then **Save piece** or **Save and place**. The output folder and material/response choices are remembered. Choose a saved **Piece** to edit it.
 
+Piece import requires static meshes. If an FBX contains rigged or skinned geometry, bake a pose and export a static mesh from Blender for a destructible piece. Use a character prefab to preserve a character's rig and animations.
+
 Drag points to edit; double-click an edge to add a point; Delete removes it. Scroll to zoom, middle-drag to pan, or **Fit**. **Add hole** creates an opening. Escape cancels a drag; Undo/Redo are supported.
 
 For disconnected outlines, click a region and **Keep selected region**; one connected region is allowed per piece. **Rebuild outline** confirms before replacing manual edits. Source conversion and texture mapping are under **Advanced**.

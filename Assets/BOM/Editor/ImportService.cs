@@ -52,6 +52,12 @@ namespace BOM.Editor
             {result.inference="Keeping the approved profile, manual corrections, appearance and gameplay settings. Source dependency changes are pending review.";result.report=AuthoringValidation.Piece(draft,previous);return result;}
             if(Application.isPlaying)
             {result.report.Add(source,"Projection","Source mesh projection is an authoring operation; this FBX may not retain readable vertices during Play mode.","Stop the playtest before regenerating a source proposal. Existing approved profiles remain editable.");return result;}
+            if(source.GetComponentsInChildren<SkinnedMeshRenderer>(true).Any(renderer=>renderer.sharedMesh!=null))
+            {
+                result.report.Add(source,"Projection","This FBX contains rigged or skinned geometry. BOM piece import supports static meshes only.",
+                    "For a destructible piece, bake a pose and export a static mesh from Blender. For an animated character, use a character prefab to keep its rig and animations.");
+                return result;
+            }
             try
             {
                 var paths=new Paths64();float depthMin=float.PositiveInfinity,depthMax=float.NegativeInfinity;
